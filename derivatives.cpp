@@ -15,9 +15,8 @@ private:
     std::string _expression;
     int _chain_rule; //Amount of times the chain rule must be computed
     std::vector<char> _arguments;
-    std::vector<char> _symbols; //Stores brackets and arithmetic symbols for the program to keep track of what operations are 
     std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
-    std::map<std::string, std::vector<char>> _b;
+    std::multimap<std::string, std::vector<char>> _b;
     std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _f;
     std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
@@ -33,116 +32,119 @@ public:
             switch(_expression[i]){
                     
                 case 'l' :  if(_expression[i + 1] == 'n'){
-                                functions_found.push_back("ln");
-                                _g.first = i;
-                                _g.second = "ln";
-                                _h.insert(_g);
-                            }
-                            else if(_expression[i + 1] == 'o'){
-                                functions_found.push_back("log");
-                                _g.first = i;
-                                _g.second = "log";
-                                _h.insert(_g);
-                            }
-                                break;
+                    functions_found.push_back("ln");
+                    _g.first = i;
+                    _g.second = "ln";
+                    _h.insert(_g);
+                }
+                else if(_expression[i + 1] == 'o'){
+                    functions_found.push_back("log");
+                    _g.first = i;
+                    _g.second = "log";
+                    _h.insert(_g);
+                }
+                    break;
                     
                 case 's' : if(_expression[i + 1] == 'i'){
-                                if(_expression[i - 3] == 'a')
-                                    ;
-                                else{
-                                    functions_found.push_back("sin");
-                                    _g.first = i;
-                                    _g.second = "sin";
-                                    _h.insert(_g);
-                                }
-                            }
-                            else if(_expression[i + 1] == 'e'){
-                                functions_found.push_back("sec");
-                                _g.first = i;
-                                _g.second = "sec";
-                                _h.insert(_g);
-                            }
-                                break;
+                    if(_expression[i - 3] == 'a')
+                        ;
+                    else{
+                        functions_found.push_back("sin");
+                        _g.first = i;
+                        _g.second = "sin";
+                        _h.insert(_g);
+                    }
+                }
+                else if(_expression[i + 1] == 'e'){
+                    functions_found.push_back("sec");
+                    _g.first = i;
+                    _g.second = "sec";
+                    _h.insert(_g);
+                }
+                    break;
                     
                 case 'c' : if(_expression[i + 1] == 'o'){
-                                if(_expression[i - 2] == 'a')
-                                    ;
-                                else{
-                                    functions_found.push_back("cos");
-                                    _g.first = i;
-                                    _g.second = "cos";
-                                    _h.insert(_g);
-                                }
-                            }
-                            else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                                ;
-                            else if(_expression[i + 3] == 'e'){
-                                functions_found.push_back("cosec");
-                                _g.first = i;
-                                _g.second = "cosec";
-                                _h.insert(_g);
-                            }
-                            else
-                                ;
-                                break;
+                    if(_expression[i - 2] == 'a')
+                        ;
+                    else{
+                        functions_found.push_back("cos");
+                        _g.first = i;
+                        _g.second = "cos";
+                        _h.insert(_g);
+                    }
+                }
+                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                    ;
+                else if(_expression[i + 3] == 'e'){
+                    functions_found.push_back("cosec");
+                    _g.first = i;
+                    _g.second = "cosec";
+                    _h.insert(_g);
+                }
+                else
+                    ;
+                    break;
                     
                 case 'a': switch(_expression[i+3]){
                         
-                            case 'o': functions_found.push_back("arcos");
-                                _g.first = i;
-                                _g.second = "arcos";
-                                _h.insert(_g);
-                                break;
-
-                            case 's': functions_found.push_back("arcsin");
-                                _g.first = i;
-                                _g.second = "arcsin";
-                                _h.insert(_g);
-                                break;
-
-
-                            case 't': functions_found.push_back("arctan");
-                                _g.first = i;
-                                _g.second = "arctan";
-                                _h.insert(_g);
-                                break;
-
-                            }
-                            break;
+                    case 'o': functions_found.push_back("arcos");
+                        _g.first = i;
+                        _g.second = "arcos";
+                        _h.insert(_g);
+                        break;
+                        
+                    case 's': functions_found.push_back("arcsin");
+                        _g.first = i;
+                        _g.second = "arcsin";
+                        _h.insert(_g);
+                        break;
+                        
+                        
+                    case 't': functions_found.push_back("arctan");
+                        _g.first = i;
+                        _g.second = "arctan";
+                        _h.insert(_g);
+                        break;
+                        
+                }
+                    break;
                     
-                case 't':   if(_expression[i - 3] == 'a')
-                                ;
-                            else if(_expression[i - 2] == 'c'){
-                                functions_found.push_back("cotan");
-                                _g.first = i - 2;
-                                _g.second = "cotan";
-                                _h.insert(_g);
-                                break;
-
-                            }
-                            else{
-                                functions_found.push_back("tan");
-                                _g.first = i;
-                                _g.second = "tan";
-                                _h.insert(_g);
-                                break;
-
-                            }
-                                break;
+                case 't': if(_expression[i - 3] == 'a')
+                    ;
+                else if(_expression[i - 2] == 'c'){
+                    functions_found.push_back("cotan");
+                    _g.first = i - 2;
+                    _g.second = "cotan";
+                    _h.insert(_g);
+                    break;
                     
-                case 'e':   if(_expression[i - 1] == 's')
-                                ;
-                            else{
-                                functions_found.push_back("e");
-                                _g.first = i;
-                                _g.second = "e";
-                                _h.insert(_g);
-                                break;
-
-                            }
-                                break;
+                }
+                else{
+                    functions_found.push_back("tan");
+                    _g.first = i;
+                    _g.second = "tan";
+                    _h.insert(_g);
+                    break;
+                    
+                }
+                    break;
+                    
+                case 'e': if(_expression[i - 1] == 's')
+                    ;
+                else{
+                    functions_found.push_back("e");
+                    _g.first = i;
+                    _g.second = "e";
+                    _h.insert(_g);
+                    break;
+                    
+                }
+                    break;
             }
             
+        }
+        for(int i = 0; i < functions_found.size(); i++){
+            std::cout << functions_found[i] << std::endl;
         }
         return functions_found;
     }
@@ -226,7 +228,7 @@ public:
             ;
         return positions;
     }
-    std::map<std::string, std::vector<int>> chain_rule(){
+    std::multimap<std::string, std::vector<int>> chain_rule(){
         //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
         bool done = false;
         bool inside_function;
@@ -236,7 +238,7 @@ public:
         int ending_pos;
         int iterations = 0;
         std::pair<std::string, std::vector<int>> c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-        std::map<std::string, std::vector<int>> d;
+        std::multimap<std::string, std::vector<int>> d;
         std::vector<std::string> functions = give_functions(); //We detect and store the different functions
         std::vector<std::size_t> brackets_positions = arrange_brackets();
         std::vector<int> arguments_positions;
@@ -318,7 +320,7 @@ void autocalculus(){
     char input[100];
     while(true){
         std::cout <<"                                               <---Auto Calculus--->\n\n";
-        std::cout <<"          How to's:\n";
+        std::cout <<"How to's:\n";
         std::cout<<"           1.When you have a function containing other functions inside your function\n";
         std::cout<<"             apart from the other functions or polynomials inside\n";
         std::cout<<"             you must make sure that the function or functions containing other functions inside your function will NEVER\n";
@@ -339,5 +341,6 @@ void autocalculus(){
 int main(){
     
     autocalculus();
+    getchar();
     return 0;
 }
