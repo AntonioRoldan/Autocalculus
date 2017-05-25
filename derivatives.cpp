@@ -1,10 +1,3 @@
-
-//  main.cpp
-//  autocalculus
-//
-//  Created by Antonio Miguel Roldan de la Rosa on 22/5/17.
-//  Copyright © 2017 Antonio Miguel Roldan de la Rosa. All rights reserved.
-//
 #include <iostream>
 #include <string>
 #include <cstdlib>
@@ -24,8 +17,6 @@ private:
     std::vector<char> _arguments;
     std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
     std::map<std::string, std::vector<char>> _b;
-    std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-    std::map<std::string, std::vector<int>> _d;
     std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _f;
     std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
@@ -234,7 +225,7 @@ public:
             ;
         return positions;
     }
-    void chain_rule(){
+    std::map<std::string, std::vector<int>> chain_rule(){
         //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
         bool done = false;
         bool inside_function;
@@ -243,23 +234,31 @@ public:
         int starting_pos;
         int ending_pos;
         int iterations = 0;
+        std::pair<std::string, std::vector<int>> c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+        std::map<std::string, std::vector<int>> d;
         std::vector<std::string> functions = give_functions(); //We detect and store the different functions
         std::vector<std::size_t> brackets_positions = arrange_brackets();
         std::vector<int> arguments_positions;
         for(int i = 0; i <brackets_positions.size(); i ++){
+            //First we check for function that don´t have other functions as arguments
             if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
-                _c.first = give_function(static_cast<int>(brackets_positions[i]));
+                c.first = give_function(static_cast<int>(brackets_positions[i]));
                 starting_pos = static_cast<int>(brackets_positions[i]);
                 ending_pos = static_cast<int>(brackets_positions[i +1]);
                 arguments_positions.push_back(starting_pos);
                 arguments_positions.push_back(ending_pos);
                 arguments_positions.push_back(_chain_rule);
-                _c.second = arguments_positions;
-                _d.insert(_c);
+                c.second = arguments_positions;
+                d.insert(c);
                 arguments_positions.clear();
             }
         }
         while(!done){
+            //Next we search for functions with functions as arguments
+            //The program keeps track of consecutive non-opposite brackets deleting each pair of complementary opposite brackets as the ending brackets are found
+            //It will iterate until the amount of iterations is equal to the amount of arguments there are
+            //This is more iterations than it would be normal for it to do but since double brackets are processed one by one and we cannot count them without processing them this is the only way to end the loop
+            //At the end the program will have kept track of each function and the range within which its arguments lie.
             if(iterations == functions.size())
                 done = true;
             inside_function = false;
@@ -273,7 +272,7 @@ public:
                         _chain_rule++;
                         starting_pos = static_cast<int>(brackets_positions[i]);
                         arguments_positions.push_back(starting_pos);
-                        _c.first = give_function(static_cast<int>(brackets_positions[i]));
+                        c.first = give_function(static_cast<int>(brackets_positions[i]));
                         brackets_positions.erase(brackets_positions.begin() + i); //We remove the first bracket before the next iteration
                         inside_function = true;
                     }
@@ -287,8 +286,8 @@ public:
                             arguments_positions.push_back(ending_pos);
                             arguments_positions.push_back(_chain_rule);
                             brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
-                            _c.second = arguments_positions;
-                            _d.insert(_c);
+                            c.second = arguments_positions;
+                            d.insert(c);
                             arguments_positions.clear();
                             _chain_rule--;
                         }
@@ -298,18 +297,15 @@ public:
             iterations++;
         }
         typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-        for(MapIterator iter = _d.begin(); iter != _d.end(); iter++){
+        for(MapIterator iter = d.begin(); iter != d.end(); iter++){
             std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
             typedef std::vector<int>::const_iterator VectorIterator;
             for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
                 std::cout << " " << *vect_iter << std::endl;
             }
         }
+        return d;
     }
-    void build_hash_table(std::vector<std::string> functions, std::vector<std::size_t> positions){
-        ;
-    }
-    
     derivative(std::string expression){
         _expression = expression;
     }
@@ -317,10 +313,30 @@ public:
     
 };
 
+void autocalculus(){
+    char input[100];
+    while(true){
+        std::cout <<"                                               <---Auto Calculus--->\n\n";
+        std::cout <<"How to's:\n";
+        std::cout<<"           1.When you have a function containing other functions inside your function\n";
+        std::cout<<"             apart from the other functions or polynomials inside\n";
+        std::cout<<"             you must make sure that the function or functions containing other functions inside your function will NEVER\n";
+        std::cout<<"             be the first argument if there are no other polynomials inside or the first after a polynomial\n";
+        std::cout<<"             Example: sin(tan(5x) + 3x + log(3x) - sec(5x + ln(2x)))";
+        std::cout<<"             NOT sin(tan(5x) + 3x + sec(5x + ln(2x)) + log(3x))\n";
+        std::cout<<"             As long as it is not the first function to appear in the argument any other combination can be valid\n";
+        std::cout<<"             Example: sin(tan(5x) + 3x + log(3x) sec(5x + ln(2x)) + cos(x))\n\n\n";
+        std::cout <<"                                   Please, enter the function to be differentiated\n                                 " << std::endl;
+        std::cin.getline(input, sizeof(input));
+        derivative function = derivative(input);
+        function.chain_rule();
+        break;
+    }
+}
+
 
 int main(){
     
-    derivative function = derivative("arcsin(3x) + tan(3x)");
-    function.chain_rule();
+    autocalculus();
     return 0;
 }
