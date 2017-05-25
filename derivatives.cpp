@@ -41,114 +41,114 @@ public:
             switch(_expression[i]){
                     
                 case 'l' :  if(_expression[i + 1] == 'n'){
-                    functions_found.push_back("ln");
-                    _g.first = i;
-                    _g.second = "ln";
-                    _h.insert(_g);
-                }
-                else if(_expression[i + 1] == 'o'){
-                    functions_found.push_back("log");
-                    _g.first = i;
-                    _g.second = "log";
-                    _h.insert(_g);
-                }
-                    break;
+                                functions_found.push_back("ln");
+                                _g.first = i;
+                                _g.second = "ln";
+                                _h.insert(_g);
+                            }
+                            else if(_expression[i + 1] == 'o'){
+                                functions_found.push_back("log");
+                                _g.first = i;
+                                _g.second = "log";
+                                _h.insert(_g);
+                            }
+                                break;
                     
                 case 's' : if(_expression[i + 1] == 'i'){
-                    if(_expression[i - 3] == 'a')
-                        ;
-                    else{
-                        functions_found.push_back("sin");
-                        _g.first = i;
-                        _g.second = "sin";
-                        _h.insert(_g);
-                    }
-                }
-                else if(_expression[i + 1] == 'e'){
-                    functions_found.push_back("sec");
-                    _g.first = i;
-                    _g.second = "sec";
-                    _h.insert(_g);
-                }
-                    break;
+                                if(_expression[i - 3] == 'a')
+                                    ;
+                                else{
+                                    functions_found.push_back("sin");
+                                    _g.first = i;
+                                    _g.second = "sin";
+                                    _h.insert(_g);
+                                }
+                            }
+                            else if(_expression[i + 1] == 'e'){
+                                functions_found.push_back("sec");
+                                _g.first = i;
+                                _g.second = "sec";
+                                _h.insert(_g);
+                            }
+                                break;
                     
                 case 'c' : if(_expression[i + 1] == 'o'){
-                    if(_expression[i - 2] == 'a')
-                        ;
-                    else{
-                        functions_found.push_back("cos");
-                        _g.first = i;
-                        _g.second = "cos";
-                        _h.insert(_g);
-                    }
-                }
-                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                    ;
-                else if(_expression[i + 3] == 'e'){
-                    functions_found.push_back("cosec");
-                    _g.first = i;
-                    _g.second = "cosec";
-                    _h.insert(_g);
-                }
-                else
-                    ;
-                    break;
+                                if(_expression[i - 2] == 'a')
+                                    ;
+                                else{
+                                    functions_found.push_back("cos");
+                                    _g.first = i;
+                                    _g.second = "cos";
+                                    _h.insert(_g);
+                                }
+                            }
+                            else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                                ;
+                            else if(_expression[i + 3] == 'e'){
+                                functions_found.push_back("cosec");
+                                _g.first = i;
+                                _g.second = "cosec";
+                                _h.insert(_g);
+                            }
+                            else
+                                ;
+                                break;
                     
                 case 'a': switch(_expression[i+3]){
                         
-                    case 'o': functions_found.push_back("arcos");
-                        _g.first = i;
-                        _g.second = "arcos";
-                        _h.insert(_g);
-                        break;
-                        
-                    case 's': functions_found.push_back("arcsin");
-                        _g.first = i;
-                        _g.second = "arcsin";
-                        _h.insert(_g);
-                        break;
-                        
-                        
-                    case 't': functions_found.push_back("arctan");
-                        _g.first = i;
-                        _g.second = "arctan";
-                        _h.insert(_g);
-                        break;
-                        
-                }
-                    break;
+                            case 'o': functions_found.push_back("arcos");
+                                _g.first = i;
+                                _g.second = "arcos";
+                                _h.insert(_g);
+                                break;
+
+                            case 's': functions_found.push_back("arcsin");
+                                _g.first = i;
+                                _g.second = "arcsin";
+                                _h.insert(_g);
+                                break;
+
+
+                            case 't': functions_found.push_back("arctan");
+                                _g.first = i;
+                                _g.second = "arctan";
+                                _h.insert(_g);
+                                break;
+
+                            }
+                            break;
                     
-                case 't': if(_expression[i - 3] == 'a')
-                    ;
-                else if(_expression[i - 2] == 'c'){
-                    functions_found.push_back("cotan");
-                    _g.first = i - 2;
-                    _g.second = "cotan";
-                    _h.insert(_g);
-                    break;
+                case 't':   if(_expression[i - 3] == 'a')
+                                ;
+                            else if(_expression[i - 2] == 'c'){
+                                functions_found.push_back("cotan");
+                                _g.first = i - 2;
+                                _g.second = "cotan";
+                                _h.insert(_g);
+                                break;
+
+                            }
+                            else{
+                                functions_found.push_back("tan");
+                                _g.first = i;
+                                _g.second = "tan";
+                                _h.insert(_g);
+                                break;
+
+                            }
+                                break;
                     
-                }
-                else{
-                    functions_found.push_back("tan");
-                    _g.first = i;
-                    _g.second = "tan";
-                    _h.insert(_g);
-                    break;
-                    
-                }
-                    break;
-                    
-                case 'e': if(_expression[i - 1] == 's')
-                    ;
-                else{
-                    functions_found.push_back("e");
-                    _g.first = i;
-                    _g.second = "e";
-                    _h.insert(_g);
-                    break;
-                    
-                }
-                    break;
+                case 'e':   if(_expression[i - 1] == 's')
+                                ;
+                            else{
+                                functions_found.push_back("e");
+                                _g.first = i;
+                                _g.second = "e";
+                                _h.insert(_g);
+                                break;
+
+                            }
+                                break;
             }
             
         }
