@@ -15,6 +15,7 @@ private:
     std::string _expression;
     int _chain_rule; //Amount of times the chain rule must be computed
     std::vector<char> _arguments;
+    std::vector<char> _symbols; //Stores brackets and arithmetic symbols for the program to keep track of what operations are 
     std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
     std::map<std::string, std::vector<char>> _b;
     std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
@@ -317,7 +318,7 @@ void autocalculus(){
     char input[100];
     while(true){
         std::cout <<"                                               <---Auto Calculus--->\n\n";
-        std::cout <<"How to's:\n";
+        std::cout <<"          How to's:\n";
         std::cout<<"           1.When you have a function containing other functions inside your function\n";
         std::cout<<"             apart from the other functions or polynomials inside\n";
         std::cout<<"             you must make sure that the function or functions containing other functions inside your function will NEVER\n";
