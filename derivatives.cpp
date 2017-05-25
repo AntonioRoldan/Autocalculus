@@ -1,3 +1,10 @@
+
+//  main.cpp
+//  autocalculus
+//
+//  Created by Antonio Miguel Roldan de la Rosa on 22/5/17.
+//  Copyright © 2017 Antonio Miguel Roldan de la Rosa. All rights reserved.
+//
 #include <iostream>
 #include <string>
 #include <cstdlib>
@@ -201,7 +208,7 @@ public:
     std::vector<std::size_t> arrange_brackets(){
         //Creates a hash table with the position for each bracket and a boolean specifying its type (false for '(' and true for ')')
         std::vector<std::size_t> positions;
-        if(brackets_bag()[0].size() > 2){ //If there are more than two brackets
+        if(brackets_bag()[0].size() > 1){ //If there are more than two brackets
             _chain_rule = 1;
             for(int i = 0; i < brackets_bag()[0].size(); i++){
                 _e.first = brackets_bag()[0][i];
@@ -220,7 +227,7 @@ public:
             positions = mergesubvectors(brackets_bag());
             std::sort(positions.begin(), positions.end());
         }
-        else if(brackets_bag()[0].size() == 2){ //If there are only two brackets
+        else if(brackets_bag()[0].size() == 1){ //If there are only two brackets
             _chain_rule = 1;
         } //If there are no brackets we just have a polynomial
         else
@@ -310,22 +317,10 @@ public:
     
 };
 
-//typedef std::map<std::string, std::vector<char>>::const_iterator MapIterator;
-//for(MapIterator iter = _f.begin(); iter != _f.end(); iter++){
-//std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-//typedef std::vector<char>::const_iterator VectorIterator;
-//for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++)
-//std::cout << " " << *vect_iter << std::endl;
-
-//_e.first = functions.front(); //As we empty the vector, functions are stored in the right order, prior to the computation of their derivatives
-//_arguments.erase(_arguments.begin() + _arguments.size() - 1);
-//functions.erase(functions.begin());
-//_e.second = _arguments; //Arguments to those functions are also being stored
-//_f.insert(_e); //We insert the pair into our hash table
 
 int main(){
     
-    derivative function = derivative("arcsin(3x + sec(3x) + tan(4x) + log(8x) + ln(5x))");
+    derivative function = derivative("arcsin(3x) + tan(3x)");
     function.chain_rule();
     return 0;
 }
