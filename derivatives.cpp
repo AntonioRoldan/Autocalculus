@@ -313,7 +313,7 @@ public:
             //}
             //}
             return d;
-        } //If it is a single function
+        } //If it is a function with multiple functions inside 
         else if(brackets_positions.size() == 2){ //If there is a single function
             ;
         }
