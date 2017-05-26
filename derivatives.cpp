@@ -34,114 +34,114 @@ public:
             switch(_expression[i]){
                     
                 case 'l' :  if(_expression[i + 1] == 'n'){
-                                functions_found.push_back("ln");
-                                _g.first = i;
-                                _g.second = "ln";
-                                _h.insert(_g);
-                            }
-                            else if(_expression[i + 1] == 'o'){
-                                functions_found.push_back("log");
-                                _g.first = i;
-                                _g.second = "log";
-                                _h.insert(_g);
-                            }
-                            break;
+                    functions_found.push_back("ln");
+                    _g.first = i;
+                    _g.second = "ln";
+                    _h.insert(_g);
+                }
+                else if(_expression[i + 1] == 'o'){
+                    functions_found.push_back("log");
+                    _g.first = i;
+                    _g.second = "log";
+                    _h.insert(_g);
+                }
+                    break;
                     
                 case 's' : if(_expression[i + 1] == 'i'){
-                                if(_expression[i - 3] == 'a')
-                                    ;
-                                else{
-                                    functions_found.push_back("sin");
-                                    _g.first = i;
-                                    _g.second = "sin";
-                                    _h.insert(_g);
-                                }
-                            }
-                            else if(_expression[i + 1] == 'e'){
-                                functions_found.push_back("sec");
-                                _g.first = i;
-                                _g.second = "sec";
-                                _h.insert(_g);
-                            }
-                            break;
+                    if(_expression[i - 3] == 'a')
+                        ;
+                    else{
+                        functions_found.push_back("sin");
+                        _g.first = i;
+                        _g.second = "sin";
+                        _h.insert(_g);
+                    }
+                }
+                else if(_expression[i + 1] == 'e'){
+                    functions_found.push_back("sec");
+                    _g.first = i;
+                    _g.second = "sec";
+                    _h.insert(_g);
+                }
+                    break;
                     
                 case 'c' : if(_expression[i + 1] == 'o'){
-                                if(_expression[i - 2] == 'a')
-                                    ;
-                                else{
-                                    functions_found.push_back("cos");
-                                    _g.first = i;
-                                    _g.second = "cos";
-                                    _h.insert(_g);
-                                }
-                            }
-                            else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                                ;
-                            else if(_expression[i + 3] == 'e'){
-                                functions_found.push_back("cosec");
-                                _g.first = i;
-                                _g.second = "cosec";
-                                _h.insert(_g);
-                            }
-                            else
-                                ;
-                            break;
+                    if(_expression[i - 2] == 'a')
+                        ;
+                    else{
+                        functions_found.push_back("cos");
+                        _g.first = i;
+                        _g.second = "cos";
+                        _h.insert(_g);
+                    }
+                }
+                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                    ;
+                else if(_expression[i + 3] == 'e'){
+                    functions_found.push_back("cosec");
+                    _g.first = i;
+                    _g.second = "cosec";
+                    _h.insert(_g);
+                }
+                else
+                    ;
+                    break;
                     
                 case 'a': switch(_expression[i+3]){
                         
-                            case 'o': functions_found.push_back("arcos");
-                                       _g.first = i;
-                                       _g.second = "arcos";
-                                       _h.insert(_g);
-                                       break;
+                    case 'o': functions_found.push_back("arcos");
+                        _g.first = i;
+                        _g.second = "arcos";
+                        _h.insert(_g);
+                        break;
                         
-                            case 's': functions_found.push_back("arcsin");
-                                      _g.first = i;
-                                      _g.second = "arcsin";
-                                      _h.insert(_g);
-                                      break;
+                    case 's': functions_found.push_back("arcsin");
+                        _g.first = i;
+                        _g.second = "arcsin";
+                        _h.insert(_g);
+                        break;
                         
                         
-                            case 't': functions_found.push_back("arctan");
-                                      _g.first = i;
-                                      _g.second = "arctan";
-                                      _h.insert(_g);
-                                      break;
+                    case 't': functions_found.push_back("arctan");
+                        _g.first = i;
+                        _g.second = "arctan";
+                        _h.insert(_g);
+                        break;
                         
-                           }
-                           break;
+                }
+                    break;
                     
                 case 't': if(_expression[i - 3] == 'a')
-                                ;
-                          else if(_expression[i - 2] == 'c'){
-                              functions_found.push_back("cotan");
-                              _g.first = i - 2;
-                              _g.second = "cotan";
-                              _h.insert(_g);
-                              break;
+                    ;
+                else if(_expression[i - 2] == 'c'){
+                    functions_found.push_back("cotan");
+                    _g.first = i - 2;
+                    _g.second = "cotan";
+                    _h.insert(_g);
+                    break;
                     
-                          }
-                          else{
-                              functions_found.push_back("tan");
-                              _g.first = i;
-                              _g.second = "tan";
-                              _h.insert(_g);
-                              break;
+                }
+                else{
+                    functions_found.push_back("tan");
+                    _g.first = i;
+                    _g.second = "tan";
+                    _h.insert(_g);
+                    break;
                     
-                          }
-                          break;
+                }
+                    break;
                     
                 case 'e': if(_expression[i - 1] == 's')
-                                ;
-                          else{
-                              functions_found.push_back("e");
-                              _g.first = i;
-                              _g.second = "e";
-                              _h.insert(_g);
-                              break;
+                    ;
+                else{
+                    functions_found.push_back("e");
+                    _g.first = i;
+                    _g.second = "e";
+                    _h.insert(_g);
+                    break;
                     
-                          }
-                          break;
+                }
+                    break;
             }
             
         }
@@ -289,92 +289,11 @@ public:
                             _d.insert(_c);
                             arguments_positions.clear();
                             _chain_rule--;
-
-    std::multimap<std::string, std::vector<int>> get_arguments(){
-        //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
-        bool done = false;
-        bool inside_function;
-        int count = 1; //Keeps track of how many functions within functions there are
-        int init;
-        int starting_pos;
-        int ending_pos;
-        int iterations = 0;
-        std::pair<std::string, std::vector<int>> c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-        std::multimap<std::string, std::vector<int>> d;
-        std::vector<std::string> functions = give_functions(); //We detect and store the different functions
-        std::vector<std::size_t> brackets_positions = arrange_brackets(); //We get the sorted positions of all brackets
-        std::vector<int> arguments_positions; //This vector is stored in the map and cleared it contains the argument range and chain rule iterations
-        if(brackets_positions.size() > 2){
-            for(int i = 0; i < brackets_positions.size(); i ++){
-                //First we check for functions with nothing but polynomials within them
-                if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
-                    c.first = give_function(static_cast<int>(brackets_positions[i]));
-                    starting_pos = static_cast<int>(brackets_positions[i]);
-                    ending_pos = static_cast<int>(brackets_positions[i + 1]);
-                    arguments_positions.push_back(starting_pos);
-                    arguments_positions.push_back(ending_pos);
-                    arguments_positions.push_back(_chain_rule);
-                    c.second = arguments_positions;
-                    d.insert(c);
-                    arguments_positions.clear();
-                }
-            }
-            while(!done){
-                //Next we search for functions having other functions as arguments
-                //The program keeps track of consecutive non-opposite brackets deleting each pair of complementary opposite brackets as the ending brackets are found
-                //It will iterate until the amount of iterations is equal to the amount of arguments there are
-                //Note that this is more iterations than it would be normal for it to do but since double brackets are processed one by one and we cannot count them without processing them this is the only way to end the loop
-                //At the end the program will have kept track of each function and the range within which its arguments lie.
-                if(iterations == functions.size())
-                    done = true;
-                inside_function = false;
-                init = count;
-                for(int i = 0; i < brackets_positions.size(); i++){
-                    if(!_f[brackets_positions[i]] and !_f[brackets_positions[i + 1]]){ //If there are two consecutive starting brackets
-                        if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double brackets
-                            count++; //If there is a function containing another function inside , count will be increased
-                        }
-                        else{
-                            _chain_rule++;
-                            starting_pos = static_cast<int>(brackets_positions[i]);
-                            arguments_positions.push_back(starting_pos);
-                            c.first = give_function(static_cast<int>(brackets_positions[i]));
-                            brackets_positions.erase(brackets_positions.begin() + i); //We remove the first bracket before the next iteration
-                            inside_function = true;
-                        }
-                    }
-                    else if(_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two consecutive ending brackets
-                        if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double
-                            if(count != init)
-                                count--;    //Once the ending brackets of a function containing another function are found, count is decreased
-                            else{
-                                ending_pos = static_cast<int>(brackets_positions[i + 1]);
-                                arguments_positions.push_back(ending_pos);
-                                arguments_positions.push_back(_chain_rule);
-                                brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
-                                c.second = arguments_positions;
-                                d.insert(c);
-                                arguments_positions.clear();
-                                _chain_rule--;
-                            }
-
                         }
                     }
                 }
-                iterations++;
             }
-            //typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-            //for(MapIterator iter = d.begin(); iter != d.end(); iter++){
-            //std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-            //typedef std::vector<int>::const_iterator VectorIterator;
-            //for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-            //  std::cout << " " << *vect_iter << std::endl;
-            //}
-            //}
-            return d;
-        } //If it is a function with multiple functions inside 
-        else if(brackets_positions.size() == 2){ //If there is a single function
-            ;
+            iterations++;
         }
     }
     void arrange_arguments(){
@@ -385,17 +304,9 @@ public:
         if(brackets_positions.size() > 2){ //If there are functions within functions or multiple functions one after the other
             //First we check for functions with nothing but polynomials within them
             functions_with_polynomials(brackets_positions, arguments_positions);
+            if(_d.size() == functions.size()) //If there are no functions inside function we can skip that processing
+                ;
             functions_inside_functions(functions, brackets_positions, arguments_positions);
-            typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-            for(MapIterator iter = _d.begin(); iter != _d.end(); iter++){
-                std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-                typedef std::vector<int>::const_iterator VectorIterator;
-                for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-                    std::cout << " " << *vect_iter << std::endl;
-                }
-            }
-        else{
-            ;
         }
         else if(brackets_positions.size() == 2){ //If there is a single function
             ;
@@ -431,11 +342,18 @@ void autocalculus(){
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
         function.arrange_arguments();
-        function.get_arguments();
         break;
     }
 }
 
+//typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
+//for(MapIterator iter = _d.begin(); iter != _d.end(); iter++){
+//std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
+//typedef std::vector<int>::const_iterator VectorIterator;
+//for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
+//std::cout << " " << *vect_iter << std::endl;
+//}
+//}
 
 int main(){
     
