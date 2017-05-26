@@ -227,7 +227,6 @@ public:
         else //If there are no brackets we just have a polynomial
             return positions; //Positions will be empty in this case
     }
-<<<<<<< HEAD
     void functions_with_polynomials(std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
         int starting_pos;
         int ending_pos;
@@ -290,7 +289,7 @@ public:
                             _d.insert(_c);
                             arguments_positions.clear();
                             _chain_rule--;
-=======
+
     std::multimap<std::string, std::vector<int>> get_arguments(){
         //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
         bool done = false;
@@ -358,7 +357,7 @@ public:
                                 arguments_positions.clear();
                                 _chain_rule--;
                             }
->>>>>>> 4b1a8a8dde91e1740cee137fa39ec99a22991d18
+
                         }
                     }
                 }
@@ -377,7 +376,6 @@ public:
         else if(brackets_positions.size() == 2){ //If there is a single function
             ;
         }
-<<<<<<< HEAD
     }
     void arrange_arguments(){
         //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
@@ -396,10 +394,8 @@ public:
                     std::cout << " " << *vect_iter << std::endl;
                 }
             }
-=======
         else{
             ;
->>>>>>> 4b1a8a8dde91e1740cee137fa39ec99a22991d18
         }
         else if(brackets_positions.size() == 2){ //If there is a single function
             ;
@@ -434,11 +430,8 @@ void autocalculus(){
         std::cout <<"                                   Please, enter the function to be differentiated\n                                 " << std::endl;
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
-<<<<<<< HEAD
         function.arrange_arguments();
-=======
         function.get_arguments();
->>>>>>> 4b1a8a8dde91e1740cee137fa39ec99a22991d18
         break;
     }
 }
