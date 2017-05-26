@@ -150,7 +150,7 @@ public:
     
     std::string give_function(int index){
         //It will return a function given the index of its starting brackets
-        //It is given by calculating the distances between the brackets and all other functions.
+        //It is given by the calculation of distances between the brackets and all other functions.
         //The minimum distance is used to find the index to the function that matches the brackets
         std::vector<int> distances;
         int distance;
