@@ -16,7 +16,9 @@ private:
     int _chain_rule; //Amount of times the chain rule must be computed
     std::vector<char> _arguments;
     std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
-    std::multimap<std::string, std::vector<char>> _b;
+    std::map<std::string, std::vector<char>> _b;
+    std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+    std::map<std::string, std::vector<int>> _d;
     std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _f;
     std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
@@ -143,17 +145,17 @@ public:
             }
             
         }
-        for(int i = 0; i < functions_found.size(); i++){
-            std::cout << functions_found[i] << std::endl;
-        }
         return functions_found;
     }
     
     std::string give_function(int index){
+        //It will return a function given the index of its starting brackets
+        //It is given by calculating the distances between the brackets and all other functions.
+        //The minimum distance is used to find the index to the function that matches the brackets
         std::vector<int> distances;
         int distance;
         std::size_t at;
-        typedef  std::map<int, std::string>::const_iterator indices;
+        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
         for( indices iter = _h.begin(); iter != _h.end(); iter++){
             distance = index - iter->first;
             if(distance > 0)
@@ -178,12 +180,12 @@ public:
         int occureb = 0; //Ending brackets occurences
         for(char& c : _expression){
             if(c  == '('){ //It stores every index of a starting bracket in sb
-                pos = boost::find_nth(_expression, "(", occursb);
+                pos = boost::find_nth(_expression, "(", occursb); //Find the nth occurence
                 sb.push_back(distance(_expression.begin(), pos.begin()));
                 occursb++;
             }
             else if(c == ')'){ //It stores every index of an ending bracket in eb
-                pos = boost::find_nth(_expression, ")", occureb);
+                pos = boost::find_nth(_expression, ")", occureb); //Find the nth occurence
                 eb.push_back(distance(_expression.begin(), pos.begin()));
                 occureb++;
             }
@@ -214,22 +216,35 @@ public:
                 _e.second = true;
                 _f.insert(_e);
             }
-            //typedef std::map<std::string, std::vector<int>>::const_iterator ValuesIterator;
-            //for(ValuesIterator iter = m.begin(); iter != m.end(); iter++){
-            //  std::cout << iter->first <<"\t" << iter->second << std::endl;
-            //}
             positions = mergesubvectors(brackets_bag());
             std::sort(positions.begin(), positions.end());
+            return positions;
         }
         else if(brackets_bag()[0].size() == 1){ //If there are only two brackets
             _chain_rule = 1;
-        } //If there are no brackets we just have a polynomial
-        else
-            ;
-        return positions;
+            return positions;
+        }
+        else //If there are no brackets we just have a polynomial
+            return positions; //Positions will be empty in this case
     }
-    std::multimap<std::string, std::vector<int>> chain_rule(){
-        //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
+    void functions_with_polynomials(std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
+        int starting_pos;
+        int ending_pos;
+        for(int i = 0; i < brackets_positions.size(); i ++){
+            if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
+                _c.first = give_function(static_cast<int>(brackets_positions[i]));
+                starting_pos = static_cast<int>(brackets_positions[i]);
+                ending_pos = static_cast<int>(brackets_positions[i + 1]);
+                arguments_positions.push_back(starting_pos);
+                arguments_positions.push_back(ending_pos);
+                arguments_positions.push_back(_chain_rule);
+                _c.second = arguments_positions;
+                _d.insert(_c);
+                arguments_positions.clear();
+            }
+        }
+    }
+    void functions_inside_functions(std::vector<std::string> functions, std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
         bool done = false;
         bool inside_function;
         int count = 1; //Keeps track of how many functions within functions there are
@@ -237,30 +252,11 @@ public:
         int starting_pos;
         int ending_pos;
         int iterations = 0;
-        std::pair<std::string, std::vector<int>> c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-        std::multimap<std::string, std::vector<int>> d;
-        std::vector<std::string> functions = give_functions(); //We detect and store the different functions
-        std::vector<std::size_t> brackets_positions = arrange_brackets();
-        std::vector<int> arguments_positions;
-        for(int i = 0; i <brackets_positions.size(); i ++){
-            //First we check for function that don´t have other functions as arguments
-            if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
-                c.first = give_function(static_cast<int>(brackets_positions[i]));
-                starting_pos = static_cast<int>(brackets_positions[i]);
-                ending_pos = static_cast<int>(brackets_positions[i +1]);
-                arguments_positions.push_back(starting_pos);
-                arguments_positions.push_back(ending_pos);
-                arguments_positions.push_back(_chain_rule);
-                c.second = arguments_positions;
-                d.insert(c);
-                arguments_positions.clear();
-            }
-        }
         while(!done){
-            //Next we search for functions with functions as arguments
+            //Next we search for functions having other functions as arguments
             //The program keeps track of consecutive non-opposite brackets deleting each pair of complementary opposite brackets as the ending brackets are found
             //It will iterate until the amount of iterations is equal to the amount of arguments there are
-            //This is more iterations than it would be normal for it to do but since double brackets are processed one by one and we cannot count them without processing them this is the only way to end the loop
+            //Note that this is more iterations than it would be normal for it to make but since double brackets are processed one by one and we cannot count them without previously processing them this is the only way to end the loop
             //At the end the program will have kept track of each function and the range within which its arguments lie.
             if(iterations == functions.size())
                 done = true;
@@ -268,29 +264,29 @@ public:
             init = count;
             for(int i = 0; i < brackets_positions.size(); i++){
                 if(!_f[brackets_positions[i]] and !_f[brackets_positions[i + 1]]){ //If there are two consecutive starting brackets
-                    if(inside_function){
-                        count++;
+                    if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double brackets
+                        count++; //If there is a function containing another function inside , count will be increased
                     }
                     else{
                         _chain_rule++;
                         starting_pos = static_cast<int>(brackets_positions[i]);
                         arguments_positions.push_back(starting_pos);
-                        c.first = give_function(static_cast<int>(brackets_positions[i]));
+                        _c.first = give_function(static_cast<int>(brackets_positions[i]));
                         brackets_positions.erase(brackets_positions.begin() + i); //We remove the first bracket before the next iteration
                         inside_function = true;
                     }
                 }
                 else if(_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two consecutive ending brackets
-                    if(inside_function){
+                    if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double
                         if(count != init)
-                            count--;
+                            count--;    //Once the ending brackets of a function containing another function are found, count is decreased
                         else{
                             ending_pos = static_cast<int>(brackets_positions[i + 1]);
                             arguments_positions.push_back(ending_pos);
                             arguments_positions.push_back(_chain_rule);
                             brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
-                            c.second = arguments_positions;
-                            d.insert(c);
+                            _c.second = arguments_positions;
+                            _d.insert(_c);
                             arguments_positions.clear();
                             _chain_rule--;
                         }
@@ -299,15 +295,34 @@ public:
             }
             iterations++;
         }
-        typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-        for(MapIterator iter = d.begin(); iter != d.end(); iter++){
-            std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-            typedef std::vector<int>::const_iterator VectorIterator;
-            for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-                std::cout << " " << *vect_iter << std::endl;
+    }
+    void arrange_arguments(){
+        //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
+        std::vector<std::string> functions = give_functions(); //We detect and store the different functions
+        std::vector<std::size_t> brackets_positions = arrange_brackets(); //We get the sorted positions of all brackets
+        std::vector<int> arguments_positions; //This vector is stored in the map and cleared it contains the argument range and chain rule iterations
+        if(brackets_positions.size() > 2){ //If there are functions within functions or multiple functions one after the other
+            //First we check for functions with nothing but polynomials within them
+            functions_with_polynomials(brackets_positions, arguments_positions);
+            functions_inside_functions(functions, brackets_positions, arguments_positions);
+            typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
+            for(MapIterator iter = _d.begin(); iter != _d.end(); iter++){
+                std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
+                typedef std::vector<int>::const_iterator VectorIterator;
+                for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
+                    std::cout << " " << *vect_iter << std::endl;
+                }
             }
         }
-        return d;
+        else if(brackets_positions.size() == 2){ //If there is a single function
+            ;
+        }
+        else{
+            ;
+        }
+    }
+    std::string polynomial_iterator(){
+        return "jo";
     }
     derivative(std::string expression){
         _expression = expression;
@@ -332,7 +347,7 @@ void autocalculus(){
         std::cout <<"                                   Please, enter the function to be differentiated\n                                 " << std::endl;
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
-        function.chain_rule();
+        function.arrange_arguments();
         break;
     }
 }
