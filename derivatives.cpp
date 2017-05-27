@@ -17,6 +17,11 @@ class derivative{
             std::string _expression;
             int _chain_rule; //Amount of times the chain rule must be computed
             std::vector<char> _arguments;
+            std::vector<std::string> _functions;
+            std::vector<int> _functions_indices;
+            std::vector<int> _product_indices;
+            std::vector<int> _quotient_indices;
+            std::Vector<int> _exponential_indices;
             std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
             std::map<std::string, std::vector<char>> _b;
             std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
@@ -25,6 +30,7 @@ class derivative{
             std::map<std::size_t, bool> _f;
             std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
             std::map<int, std::string> _h;
+    
 
         public:
 
@@ -36,12 +42,14 @@ class derivative{
                             
                         case 'l' :  if(_expression[i + 1] == 'n'){
                             functions_found.push_back("ln");
+                            _functions_indice.push_back(i);
                             _g.first = i;
                             _g.second = "ln";
                             _h.insert(_g);
                         }
                         else if(_expression[i + 1] == 'o'){
                             functions_found.push_back("log");
+                            _functions_indices.push_back(i);
                             _g.first = i;
                             _g.second = "log";
                             _h.insert(_g);
@@ -53,6 +61,7 @@ class derivative{
                                 ;
                             else{
                                 functions_found.push_back("sin");
+                                _functions_indices.push_back(i);
                                 _g.first = i;
                                 _g.second = "sin";
                                 _h.insert(_g);
@@ -60,6 +69,7 @@ class derivative{
                         }
                         else if(_expression[i + 1] == 'e'){
                             functions_found.push_back("sec");
+                            _functions_indices.push_back(i);
                             _g.first = i;
                             _g.second = "sec";
                             _h.insert(_g);
@@ -71,6 +81,7 @@ class derivative{
                                 ;
                             else{
                                 functions_found.push_back("cos");
+                                _functions_indices.push_back(i);
                                 _g.first = i;
                                 _g.second = "cos";
                                 _h.insert(_g);
@@ -80,6 +91,7 @@ class derivative{
                             ;
                         else if(_expression[i + 3] == 'e'){
                             functions_found.push_back("cosec");
+                            _functions_indices.push_back(i);
                             _g.first = i;
                             _g.second = "cosec";
                             _h.insert(_g);
@@ -91,58 +103,61 @@ class derivative{
                         case 'a': switch(_expression[i+3]){
                                 
                             case 'o': functions_found.push_back("arcos");
-                                _g.first = i;
-                                _g.second = "arcos";
-                                _h.insert(_g);
-                                break;
+                                      _functions_indices.push_back(i);
+                                      _g.first = i;
+                                      _g.second = "arcos";
+                                      _h.insert(_g);
+                                      break;
                                 
                             case 's': functions_found.push_back("arcsin");
-                                _g.first = i;
-                                _g.second = "arcsin";
-                                _h.insert(_g);
-                                break;
+                                      _functions_indices.push_back(i);
+                                      _g.first = i;
+                                      _g.second = "arcsin";
+                                      _h.insert(_g);
+                                      break;
                                 
                                 
-                            case 't': functions_found.push_back("arctan");
-                                _g.first = i;
-                                _g.second = "arctan";
-                                _h.insert(_g);
-                                break;
+                            case 't':  functions_found.push_back("arctan");
+                                       _functions_indices.push_back(i);
+                                       _g.first = i;
+                                       _g.second = "arctan";
+                                       _h.insert(_g);
+                                       break;
                                 
                         }
-                            break;
+                        break;
                             
                         case 't': if(_expression[i - 3] == 'a')
-                            ;
-                        else if(_expression[i - 2] == 'c'){
-                            functions_found.push_back("cotan");
-                            _g.first = i - 2;
-                            _g.second = "cotan";
-                            _h.insert(_g);
-                            break;
-                            
-                        }
-                        else{
-                            functions_found.push_back("tan");
-                            _g.first = i;
-                            _g.second = "tan";
-                            _h.insert(_g);
-                            break;
-                            
-                        }
-                            break;
+                                    ;
+                                  else if(_expression[i - 2] == 'c'){
+                                      functions_found.push_back("cotan");
+                                      _functions_indices.push_back(i);
+                                      _g.first = i - 2;
+                                      _g.second = "cotan";
+                                      _h.insert(_g);
+                                      break;
+                                  }
+                                  else{
+                                      functions_found.push_back("tan");
+                                      _functions_indices.push_back(i);
+                                      _g.first = i;
+                                      _g.second = "tan";
+                                      _h.insert(_g);
+                                      break;
+                                  }
+                                  break;
                             
                         case 'e': if(_expression[i - 1] == 's')
-                            ;
-                        else{
-                            functions_found.push_back("e");
-                            _g.first = i;
-                            _g.second = "e";
-                            _h.insert(_g);
-                            break;
-                            
-                        }
-                            break;
+                                        ;
+                                  else{
+                                    functions_found.push_back("e");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "e";
+                                    _h.insert(_g);
+                                    break;
+                                  }
+                    break;
                     }
                     
                 }
@@ -268,7 +283,7 @@ class derivative{
                     for(int i = 0; i < brackets_positions.size(); i++){
                         if(!_f[brackets_positions[i]] and !_f[brackets_positions[i + 1]]){ //If there are two consecutive starting brackets
                             if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double brackets
-                                count++; //If there is a function containing another function inside , count will be increased
+                                count++; //In other words, if there is a function containing another function inside, count will be increased
                             }
                             else{
                                 _chain_rule++;
@@ -300,19 +315,17 @@ class derivative{
                 }
             }
 
-
-
             void arrange_arguments(){
                 //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
-                std::vector<std::string> functions = give_functions(); //We detect and store the different functions
+                _functions = give_functions(); //We detect and store the different functions
                 std::vector<std::size_t> brackets_positions = arrange_brackets(); //We get the sorted positions of all brackets
                 std::vector<int> arguments_positions; //This vector is stored in the map and cleared it contains the argument range and chain rule iterations
                 if(brackets_positions.size() > 2){ //If there are functions within functions or multiple functions one after the other
                     //First we check for functions with nothing but polynomials within them
                     functions_with_polynomials(brackets_positions, arguments_positions);
-                    if(_d.size() == functions.size()) //If there are no functions inside function we can skip that processing
+                    if(_d.size() == functions.size()) //If there are no functions inside this function we can skip that processing
                         for(std::string function : functions){
-                            iterate_argument(_d[function], _d[function][0], _d[function][1]);
+                            iterate_argument(_d[function], _d[function][0],_d[function][1]);
                         }
                     else
                         functions_inside_functions(functions, brackets_positions, arguments_positions);
@@ -322,38 +335,52 @@ class derivative{
                 }
                 else if(brackets_positions.size() == 2){ //If there is a single function
                     functions_with_polynomials(brackets_positions, arguments_positions);
-                    iterate_argument(_d[functions[0]], _d[functions[0]][0], _d[functions[0]][1];
+                    for(std::string function : _functions){
+                        iterate_argument(_d[function], _d[function][0], _d[function][1];
+                    }
                 }
                 else{ //If the expression is just a polynomial
-                    ;
+                    std::vector<std::string> symbols_bag = iterate_polynomial();
                 }
             }
 
 
             void iterate_argument(std::vector<std::string> between_brackets, int init_pos, int end_pos){
-                std::vector<int> product_indices;
-                std::vector<int> quotient_indices;
-                std::Vector<int> exponential_indices;
                 for(int i = init_pos; i < end_pos; i++){
-                    
-                            
-                        switch(_expression[i]){
-                                
-                            case '+' : between_brackets.push_back(i); break;
-                                
-                            case '-' : between_brackets.push_back(i); break;
-                                
-                            case '*' :  between_brackets.push_back(i); product_indices.push_back(i); break;
-                                
-                            case '/' :  between_brackets.push_back(i); quotient_indices.push_back(i); break;
-
-                            case '^' : between_brackets.push_back(i); exponential_indices.push_back(i); break;
-                                
-                        }
+                    symbols_bag(between_brackets, _expression[i], i);
                 }
                 std::sort(functions.begin(); functions.end());
             }
-
+                                     
+            void symbols_bag(std::vector<std::string> symbols_bag, char c, int index){
+                //_functions will be useless if the expression is non polynomical since the symbols´ positions will be stored in the function
+                
+                _product_indices.push_back(i);
+                _quotient_indices.push_back(i);
+                _exponential_indices.push_back(i);
+                
+                switch(c){
+                        
+                    case '+' : symbols_bag.push_back(index);  break;
+                        
+                    case '-' : symbols_bag.push_back(index);  break;
+                        
+                    case '*' :  symbols_bag.push_back(index); _product_indices.push_back(index);  break;
+                        
+                    case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); break;
+                        
+                    case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); break;
+                        
+                }
+            }
+            
+            std::vector<std::string> iterate_polynomial(std::vector<int> symbols_bag, ){
+                std::vector<std::string> indices;
+                for(int i = 0; i < _expression.length(); i++){
+                    symbols_bag(indices, _expression[i], i);
+                }
+                return indices;
+            }
 
             std::string differentiate_trigonometric(std::string function){
                 ;
@@ -374,8 +401,42 @@ class derivative{
             }
 
 
-            std::string product_rule(std::string function){
-                ;
+            std::string product_rule(bool polynomial, int symbol_index){
+                std::tuple<std::string, std::string> f_g;
+                std::string derivative_a;
+                std::string derivative_b;
+                std::size_t pos;
+                std::string function_a = give_function(symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
+                std::string function_b;
+                pos = std::find(_functions.begin(), _functions.end(), symbol_index);
+                if(polynomial){
+                    ;
+                }
+                else{
+                    if(!_functions){ //If no functions have been stored
+                        derivative_a = differentiate(function);
+                        derivative_b =
+                    }
+                    else{ //we have a polynomial
+                        ;
+                    }
+                }
+            }
+            
+            std::string differentiate(std::string function){
+                std::string derivative;
+                if(function == "Ln" or function == "Log"){
+                    derivative = differentiate_logarithmic(function);
+                }
+                else if(function == "sin" or function == "cos" or function == "tan" or function == "sec" or function == "cosec" or function == "cotan"){
+                    derivative = differentiate_trigonometric(function);
+                }
+                else if(function == "e"){
+                    derivative = differentiate_e(function);
+                }
+                else
+                    derivative = differentiate_polynomial(function);
+                return derivative;
             }
 
             std::string quotient_rule(std::string function){
