@@ -8,446 +8,459 @@
 #include <algorithm>
 #include <boost/algorithm/string/find.hpp>
 #include <tuple>
-
+#include <cctype>
 
 class derivative{
     
-        private:
-
-            std::string _expression;
-            int _chain_rule; //Amount of times the chain rule must be computed
-            std::vector<char> _arguments;
-            std::vector<std::string> _functions;
-            std::vector<int> _functions_indices;
-            std::vector<int> _product_indices;
-            std::vector<int> _quotient_indices;
-            std::Vector<int> _exponential_indices;
-            std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
-            std::map<std::string, std::vector<char>> _b;
-            std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-            std::map<std::string, std::vector<int>> _d;
-            std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
-            std::map<std::size_t, bool> _f;
-            std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
-            std::map<int, std::string> _h;
+private:
     
-
-        public:
-
-            std::vector<std::string> give_functions(){
-                std::vector<std::string> functions_found;
-                for(int i = 0; i < _expression.size();i++){
+    std::string _expression;
+    int _chain_rule; //Amount of times the chain rule must be computed
+    std::vector<char> _arguments;
+    std::vector<std::string> _functions;
+    std::vector<int> _functions_indices;
+    std::vector<int> _product_indices;
+    std::vector<int> _quotient_indices;
+    std::vector<int> _exponential_indices;
+    std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
+    std::map<std::string, std::vector<char>> _b;
+    std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+    std::map<std::string, std::vector<int>> _d;
+    std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
+    std::map<std::size_t, bool> _f;
+    std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
+    std::map<int, std::string> _h;
+    
+    
+public:
+    
+    void give_functions(){
+        for(int i = 0; i < _expression.size();i++){
+            
+            switch(_expression[i]){
                     
-                    switch(_expression[i]){
-                            
-                        case 'l' :  if(_expression[i + 1] == 'n'){
-                            functions_found.push_back("ln");
-                            _functions_indice.push_back(i);
-                            _g.first = i;
-                            _g.second = "ln";
-                            _h.insert(_g);
-                        }
-                        else if(_expression[i + 1] == 'o'){
-                            functions_found.push_back("log");
-                            _functions_indices.push_back(i);
-                            _g.first = i;
-                            _g.second = "log";
-                            _h.insert(_g);
-                        }
-                            break;
-                            
-                        case 's' : if(_expression[i + 1] == 'i'){
-                            if(_expression[i - 3] == 'a')
-                                ;
-                            else{
-                                functions_found.push_back("sin");
-                                _functions_indices.push_back(i);
-                                _g.first = i;
-                                _g.second = "sin";
-                                _h.insert(_g);
-                            }
-                        }
-                        else if(_expression[i + 1] == 'e'){
-                            functions_found.push_back("sec");
-                            _functions_indices.push_back(i);
-                            _g.first = i;
-                            _g.second = "sec";
-                            _h.insert(_g);
-                        }
-                            break;
-                            
-                        case 'c' : if(_expression[i + 1] == 'o'){
-                            if(_expression[i - 2] == 'a')
-                                ;
-                            else{
-                                functions_found.push_back("cos");
-                                _functions_indices.push_back(i);
-                                _g.first = i;
-                                _g.second = "cos";
-                                _h.insert(_g);
-                            }
-                        }
-                        else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                            ;
-                        else if(_expression[i + 3] == 'e'){
-                            functions_found.push_back("cosec");
-                            _functions_indices.push_back(i);
-                            _g.first = i;
-                            _g.second = "cosec";
-                            _h.insert(_g);
-                        }
-                        else
-                            ;
-                            break;
-                            
-                        case 'a': switch(_expression[i+3]){
-                                
-                            case 'o': functions_found.push_back("arcos");
-                                      _functions_indices.push_back(i);
-                                      _g.first = i;
-                                      _g.second = "arcos";
-                                      _h.insert(_g);
-                                      break;
-                                
-                            case 's': functions_found.push_back("arcsin");
-                                      _functions_indices.push_back(i);
-                                      _g.first = i;
-                                      _g.second = "arcsin";
-                                      _h.insert(_g);
-                                      break;
-                                
-                                
-                            case 't':  functions_found.push_back("arctan");
-                                       _functions_indices.push_back(i);
-                                       _g.first = i;
-                                       _g.second = "arctan";
-                                       _h.insert(_g);
-                                       break;
-                                
-                        }
-                        break;
-                            
-                        case 't': if(_expression[i - 3] == 'a')
-                                    ;
-                                  else if(_expression[i - 2] == 'c'){
-                                      functions_found.push_back("cotan");
-                                      _functions_indices.push_back(i);
-                                      _g.first = i - 2;
-                                      _g.second = "cotan";
-                                      _h.insert(_g);
-                                      break;
-                                  }
-                                  else{
-                                      functions_found.push_back("tan");
-                                      _functions_indices.push_back(i);
-                                      _g.first = i;
-                                      _g.second = "tan";
-                                      _h.insert(_g);
-                                      break;
-                                  }
-                                  break;
-                            
-                        case 'e': if(_expression[i - 1] == 's')
-                                        ;
-                                  else{
-                                    functions_found.push_back("e");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "e";
-                                    _h.insert(_g);
-                                    break;
-                                  }
+                case 'l' :  if(_expression[i + 1] == 'n'){
+                    _functions.push_back("ln");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "ln";
+                    _h.insert(_g);
+                }
+                else if(_expression[i + 1] == 'o'){
+                    _functions.push_back("log");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "log";
+                    _h.insert(_g);
+                }
                     break;
-                    }
                     
-                }
-                return functions_found;
-            }
-
-            std::string give_function(int index){
-                //It will return a function given the index of its starting brackets
-                //It is given by calculating the distances between the brackets and all other functions.
-                //The minimum distance is used to find the index to the function that matches the brackets
-                std::vector<int> distances;
-                int distance;
-                std::size_t at;
-                typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
-                for( indices iter = _h.begin(); iter != _h.end(); iter++){
-                    distance = index - iter->first;
-                    if(distance > 0)
-                        distances.push_back(distance);
-                    else
+                case 's' : if(_expression[i + 1] == 'i'){
+                    if(_expression[i - 3] == 'a')
                         ;
-                }
-                auto min = std::min_element(std::begin(distances), std::end(distances));
-                at = std::distance(distances.begin(), min);
-                return _h[index - distances[static_cast<int>(at)]];
-            }
-
-            std::vector<std::vector<std::size_t>> brackets_bag(){
-                //It collects the positions of starting and ending brackets and stores them in two separate vectors, contained in a vector
-                std::vector<std::size_t> sb;
-                std::vector<std::size_t> eb;
-                std::vector<std::vector<std::size_t>> positions;
-                boost::iterator_range<std::string::iterator> pos;
-                std::pair<std::size_t, bool> p;
-                std::map<std::size_t, bool> m;
-                int occursb = 0; //Starting brackets occurences
-                int occureb = 0; //Ending brackets occurences
-                for(char& c : _expression){
-                    if(c  == '('){ //It stores every index of a starting bracket in sb
-                        pos = boost::find_nth(_expression, "(", occursb); //Find the nth occurence
-                        sb.push_back(distance(_expression.begin(), pos.begin()));
-                        occursb++;
-                    }
-                    else if(c == ')'){ //It stores every index of an ending bracket in eb
-                        pos = boost::find_nth(_expression, ")", occureb); //Find the nth occurence
-                        eb.push_back(distance(_expression.begin(), pos.begin()));
-                        occureb++;
+                    else{
+                        _functions.push_back("sin");
+                        _functions_indices.push_back(i);
+                        _g.first = i;
+                        _g.second = "sin";
+                        _h.insert(_g);
                     }
                 }
-                positions.push_back(sb);
-                positions.push_back(eb);
-                return positions;
-            }
-
-            std::vector<std::size_t> mergesubvectors(std::vector<std::vector<std::size_t>> vector){
-                auto merged = vector[0];
-                merged.insert(std::end(merged), std::begin(vector[1]), std::end(vector[1]));
-                return merged;
-            }
-
-            std::vector<std::size_t> arrange_brackets(){
-                //Creates a hash table with the position for each bracket and a boolean specifying its type (false for '(' and true for ')')
-                std::vector<std::size_t> positions;
-                if(brackets_bag()[0].size() > 0){ //If there are any functions
-                    _chain_rule = 1;
-                    for(int i = 0; i < brackets_bag()[0].size(); i++){
-                        _e.first = brackets_bag()[0][i];
-                        _e.second = false;
-                        _f.insert(_e);
-                    }
-                    for(int i = 0; i < brackets_bag()[1].size(); i++){
-                        _e.first = brackets_bag()[1][i];
-                        _e.second = true;
-                        _f.insert(_e);
-                    }
-                    positions = mergesubvectors(brackets_bag());
-                    std::sort(positions.begin(), positions.end());
-                    return positions;
+                else if(_expression[i + 1] == 'e'){
+                    _functions.push_back("sec");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "sec";
+                    _h.insert(_g);
                 }
-                else if(brackets_bag()[0].size() == 1){ //If there are only two brackets
-                    _chain_rule = 1;
-                    return positions;
-                }
-                else //If there are no brackets we just have a polynomial
-                    return positions; //Positions will be empty in this case
-            }
-
-            void functions_with_polynomials(std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
-                int starting_pos;
-                int ending_pos;
-                for(int i = 0; i < brackets_positions.size(); i ++){
-                    if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
-                        _c.first = give_function(static_cast<int>(brackets_positions[i]));
-                        starting_pos = static_cast<int>(brackets_positions[i]);
-                        ending_pos = static_cast<int>(brackets_positions[i + 1]);
-                        arguments_positions.push_back(starting_pos);
-                        arguments_positions.push_back(ending_pos);
-                        arguments_positions.push_back(_chain_rule);
-                        _c.second = arguments_positions;
-                        _d.insert(_c);
-                        arguments_positions.clear(); //Arguments is cleared for it to be used in the next iteration
+                    break;
+                    
+                case 'c' : if(_expression[i + 1] == 'o'){
+                    if(_expression[i - 2] == 'a')
+                        ;
+                    else{
+                        _functions.push_back("cos");
+                        _functions_indices.push_back(i);
+                        _g.first = i;
+                        _g.second = "cos";
+                        _h.insert(_g);
                     }
                 }
-            }
-
-            void functions_inside_functions(std::vector<std::string> functions, std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
-                bool done = false;
-                bool inside_function;
-                int count = 1; //Keeps track of how many functions within functions there are
-                int init;
-                int starting_pos;
-                int ending_pos;
-                int iterations = 0;
-                while(!done){
-                    //Next we search for functions having other functions as arguments
-                    //The program keeps track of consecutive non-opposite brackets deleting each pair of complementary opposite brackets as the ending brackets are found
-                    //It will iterate until the amount of iterations is equal to the amount of arguments there are
-                    //Note that this is more iterations than it would be normal for it to make but since double brackets are processed one by one and we cannot count them without previously processing them this is the only way to end the loop
-                    //At the end the program will have kept track of each function and the range within which its arguments lie.
-                    if(iterations == functions.size())
-                        done = true;
-                    inside_function = false;
-                    init = count;
-                    for(int i = 0; i < brackets_positions.size(); i++){
-                        if(!_f[brackets_positions[i]] and !_f[brackets_positions[i + 1]]){ //If there are two consecutive starting brackets
-                            if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double brackets
-                                count++; //In other words, if there is a function containing another function inside, count will be increased
-                            }
-                            else{
-                                _chain_rule++;
-                                starting_pos = static_cast<int>(brackets_positions[i]);
-                                arguments_positions.push_back(starting_pos);
-                                _c.first = give_function(static_cast<int>(brackets_positions[i]));
-                                brackets_positions.erase(brackets_positions.begin() + i); //We remove the first bracket before the next iteration
-                                inside_function = true;
-                            }
-                        }
-                        else if(_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two consecutive ending brackets
-                            if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double
-                                if(count != init)
-                                    count--;    //Once the ending brackets of a function containing another function are found, count is decreased
-                                else{
-                                    ending_pos = static_cast<int>(brackets_positions[i + 1]);
-                                    arguments_positions.push_back(ending_pos);
-                                    arguments_positions.push_back(_chain_rule);
-                                    brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
-                                    _c.second = arguments_positions;
-                                    _d.insert(_c);
-                                    arguments_positions.clear();
-                                    _chain_rule--;
-                                }
-                            }
-                        }
-                    }
-                    iterations++;
-                }
-            }
-
-            void arrange_arguments(){
-                //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
-                _functions = give_functions(); //We detect and store the different functions
-                std::vector<std::size_t> brackets_positions = arrange_brackets(); //We get the sorted positions of all brackets
-                std::vector<int> arguments_positions; //This vector is stored in the map and cleared it contains the argument range and chain rule iterations
-                if(brackets_positions.size() > 2){ //If there are functions within functions or multiple functions one after the other
-                    //First we check for functions with nothing but polynomials within them
-                    functions_with_polynomials(brackets_positions, arguments_positions);
-                    if(_d.size() == functions.size()) //If there are no functions inside this function we can skip that processing
-                        for(std::string function : functions){
-                            iterate_argument(_d[function], _d[function][0],_d[function][1]);
-                        }
-                    else
-                        functions_inside_functions(functions, brackets_positions, arguments_positions);
-                        for(std::string function : functions){
-                            iterate_argument(_d[function], _d[function][0], _d[function][1]);
-                        }
-                }
-                else if(brackets_positions.size() == 2){ //If there is a single function
-                    functions_with_polynomials(brackets_positions, arguments_positions);
-                    for(std::string function : _functions){
-                        iterate_argument(_d[function], _d[function][0], _d[function][1];
-                    }
-                }
-                else{ //If the expression is just a polynomial
-                    std::vector<std::string> symbols_bag = iterate_polynomial();
-                }
-            }
-
-
-            void iterate_argument(std::vector<std::string> between_brackets, int init_pos, int end_pos){
-                for(int i = init_pos; i < end_pos; i++){
-                    symbols_bag(between_brackets, _expression[i], i);
-                }
-                std::sort(functions.begin(); functions.end());
-            }
-                                     
-            void symbols_bag(std::vector<std::string> symbols_bag, char c, int index){
-                //_functions will be useless if the expression is non polynomical since the symbols´ positions will be stored in the function
-                
-                _product_indices.push_back(i);
-                _quotient_indices.push_back(i);
-                _exponential_indices.push_back(i);
-                
-                switch(c){
-                        
-                    case '+' : symbols_bag.push_back(index);  break;
-                        
-                    case '-' : symbols_bag.push_back(index);  break;
-                        
-                    case '*' :  symbols_bag.push_back(index); _product_indices.push_back(index);  break;
-                        
-                    case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); break;
-                        
-                    case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); break;
-                        
-                }
-            }
-            
-            std::vector<std::string> iterate_polynomial(std::vector<int> symbols_bag, ){
-                std::vector<std::string> indices;
-                for(int i = 0; i < _expression.length(); i++){
-                    symbols_bag(indices, _expression[i], i);
-                }
-                return indices;
-            }
-
-            std::string differentiate_trigonometric(std::string function){
-                ;
-            }
-
-            std::string differentiate_logarithmic(std::string function){
-                ;
-            }
-
-            std::string differentiate_e(std::string function){
-                ;
-            }
-
-            std::string differentiate_polynomial(std::string polynomial){
-                std::string derivative;
-                derivative = polynomial.assign(derivative.begin(), derivative.end() - 1);
-                return derivative;
-            }
-
-
-            std::string product_rule(bool polynomial, int symbol_index){
-                std::tuple<std::string, std::string> f_g;
-                std::string derivative_a;
-                std::string derivative_b;
-                std::size_t pos;
-                std::string function_a = give_function(symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
-                std::string function_b;
-                pos = std::find(_functions.begin(), _functions.end(), symbol_index);
-                if(polynomial){
+                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
                     ;
-                }
-                else{
-                    if(!_functions){ //If no functions have been stored
-                        derivative_a = differentiate(function);
-                        derivative_b =
-                    }
-                    else{ //we have a polynomial
-                        ;
-                    }
-                }
-            }
-            
-            std::string differentiate(std::string function){
-                std::string derivative;
-                if(function == "Ln" or function == "Log"){
-                    derivative = differentiate_logarithmic(function);
-                }
-                else if(function == "sin" or function == "cos" or function == "tan" or function == "sec" or function == "cosec" or function == "cotan"){
-                    derivative = differentiate_trigonometric(function);
-                }
-                else if(function == "e"){
-                    derivative = differentiate_e(function);
+                else if(_expression[i + 3] == 'e'){
+                    _functions.push_back("cosec");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "cosec";
+                    _h.insert(_g);
                 }
                 else
-                    derivative = differentiate_polynomial(function);
-                return derivative;
+                    ;
+                    break;
+                    
+                case 'a': switch(_expression[i+3]){
+                        
+                    case 'o': _functions.push_back("arcos");
+                        _functions_indices.push_back(i);
+                        _g.first = i;
+                        _g.second = "arcos";
+                        _h.insert(_g);
+                        break;
+                        
+                    case 's': _functions.push_back("arcsin");
+                        _functions_indices.push_back(i);
+                        _g.first = i;
+                        _g.second = "arcsin";
+                        _h.insert(_g);
+                        break;
+                        
+                        
+                    case 't':  _functions.push_back("arctan");
+                        _functions_indices.push_back(i);
+                        _g.first = i;
+                        _g.second = "arctan";
+                        _h.insert(_g);
+                        break;
+                        
+                }
+                    break;
+                    
+                case 't': if(_expression[i - 3] == 'a')
+                    ;
+                else if(_expression[i - 2] == 'c'){
+                    _functions.push_back("cotan");
+                    _functions_indices.push_back(i);
+                    _g.first = i - 2;
+                    _g.second = "cotan";
+                    _h.insert(_g);
+                    break;
+                }
+                else{
+                    _functions.push_back("tan");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "tan";
+                    _h.insert(_g);
+                    break;
+                }
+                    break;
+                    
+                case 'e': if(_expression[i - 1] == 's')
+                    ;
+                else{
+                    _functions.push_back("e");
+                    _functions_indices.push_back(i);
+                    _g.first = i;
+                    _g.second = "e";
+                    _h.insert(_g);
+                    break;
+                }
+                    break;
             }
-
-            std::string quotient_rule(std::string function){
-                ;
-            }
-
-            derivative(std::string expression){
-                _expression = expression;
+            
         }
-
-
+    }
+    
+    std::string give_function(int index){
+        //It will return a function given the index of its starting brackets
+        //It is given by calculating the distances between the brackets and all other functions.
+        //The minimum distance is used to find the index to the function that matches the brackets
+        std::vector<int> distances;
+        int distance;
+        std::size_t at;
+        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
+        for( indices iter = _h.begin(); iter != _h.end(); iter++){
+            distance = index - iter->first;
+            if(distance > 0)
+                distances.push_back(distance);
+            else
+                ;
+        }
+        auto min = std::min_element(std::begin(distances), std::end(distances));
+        at = std::distance(distances.begin(), min);
+        return _h[index - distances[static_cast<int>(at)]];
+    }
+    
+    std::vector<std::vector<std::size_t>> brackets_bag(){
+        //It collects the positions of starting and ending brackets and stores them in two separate vectors, contained in a vector
+        std::vector<std::size_t> sb;
+        std::vector<std::size_t> eb;
+        std::vector<std::vector<std::size_t>> positions;
+        boost::iterator_range<std::string::iterator> pos;
+        std::pair<std::size_t, bool> p;
+        std::map<std::size_t, bool> m;
+        int occursb = 0; //Starting brackets occurences
+        int occureb = 0; //Ending brackets occurences
+        for(char& c : _expression){
+            if(c  == '('){ //It stores every index of a starting bracket in sb
+                pos = boost::find_nth(_expression, "(", occursb); //Find the nth occurence
+                sb.push_back(distance(_expression.begin(), pos.begin()));
+                occursb++;
+            }
+            else if(c == ')'){ //It stores every index of an ending bracket in eb
+                pos = boost::find_nth(_expression, ")", occureb); //Find the nth occurence
+                eb.push_back(distance(_expression.begin(), pos.begin()));
+                occureb++;
+            }
+        }
+        positions.push_back(sb);
+        positions.push_back(eb);
+        return positions;
+    }
+    
+    std::vector<std::size_t> mergesubvectors(std::vector<std::vector<std::size_t>> vector){
+        auto merged = vector[0];
+        merged.insert(std::end(merged), std::begin(vector[1]), std::end(vector[1]));
+        return merged;
+    }
+    
+    std::vector<std::size_t> arrange_brackets(){
+        //Creates a hash table with the position for each bracket and a boolean specifying its type (false for '(' and true for ')')
+        std::vector<std::size_t> positions;
+        if(brackets_bag()[0].size() > 0){ //If there are any functions
+            _chain_rule = 1;
+            for(int i = 0; i < brackets_bag()[0].size(); i++){
+                _e.first = brackets_bag()[0][i];
+                _e.second = false;
+                _f.insert(_e);
+            }
+            for(int i = 0; i < brackets_bag()[1].size(); i++){
+                _e.first = brackets_bag()[1][i];
+                _e.second = true;
+                _f.insert(_e);
+            }
+            positions = mergesubvectors(brackets_bag());
+            std::sort(positions.begin(), positions.end());
+            return positions;
+        }
+        else if(brackets_bag()[0].size() == 1){ //If there are only two brackets
+            _chain_rule = 1;
+            return positions;
+        }
+        else //If there are no brackets we just have a polynomial
+            return positions; //Positions will be empty in this case
+    }
+    
+    void functions_with_polynomials(std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
+        int starting_pos;
+        int ending_pos;
+        for(int i = 0; i < brackets_positions.size(); i ++){
+            if(!_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two brackets facing each other
+                _c.first = give_function(static_cast<int>(brackets_positions[i]));
+                starting_pos = static_cast<int>(brackets_positions[i]);
+                ending_pos = static_cast<int>(brackets_positions[i + 1]);
+                arguments_positions.push_back(starting_pos);
+                arguments_positions.push_back(ending_pos);
+                arguments_positions.push_back(_chain_rule);
+                _c.second = arguments_positions;
+                _d.insert(_c);
+                arguments_positions.clear(); //Arguments is cleared for it to be used in the next iteration
+            }
+        }
+    }
+    
+    void functions_inside_functions(std::vector<std::string> functions, std::vector<std::size_t> brackets_positions, std::vector<int> arguments_positions){
+        bool done = false;
+        bool inside_function;
+        int count = 1; //Keeps track of how many functions within functions there are
+        int init;
+        int starting_pos;
+        int ending_pos;
+        int iterations = 0;
+        while(!done){
+            //Next we search for functions having other functions as arguments
+            //The program keeps track of consecutive non-opposite brackets deleting each pair of complementary opposite brackets as the ending brackets are found
+            //It will iterate until the amount of iterations is equal to the amount of arguments there are
+            //Note that this is more iterations than it would be normal for it to make but since double brackets are processed one by one and we cannot count them without previously processing them this is the only way to end the loop
+            //At the end the program will have kept track of each function and the range within which its arguments lie.
+            if(iterations == functions.size())
+                done = true;
+            inside_function = false;
+            init = count;
+            for(int i = 0; i < brackets_positions.size(); i++){
+                if(!_f[brackets_positions[i]] and !_f[brackets_positions[i + 1]]){ //If there are two consecutive starting brackets
+                    if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double brackets
+                        count++; //In other words, if there is a function containing another function inside, count will be increased
+                    }
+                    else{
+                        _chain_rule++;
+                        starting_pos = static_cast<int>(brackets_positions[i]);
+                        arguments_positions.push_back(starting_pos);
+                        _c.first = give_function(static_cast<int>(brackets_positions[i]));
+                        brackets_positions.erase(brackets_positions.begin() + i); //We remove the first bracket before the next iteration
+                        inside_function = true;
+                    }
+                }
+                else if(_f[brackets_positions[i]] and _f[brackets_positions[i + 1]]){ //If there are two consecutive ending brackets
+                    if(inside_function){ //In order for the program not to get confused, we'll ignore double brackets found inside double
+                        if(count != init)
+                            count--;    //Once the ending brackets of a function containing another function are found, count is decreased
+                        else{
+                            ending_pos = static_cast<int>(brackets_positions[i + 1]);
+                            arguments_positions.push_back(ending_pos);
+                            arguments_positions.push_back(_chain_rule);
+                            brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
+                            _c.second = arguments_positions;
+                            _d.insert(_c);
+                            arguments_positions.clear();
+                            _chain_rule--;
+                        }
+                    }
+                }
+            }
+            iterations++;
+        }
+    }
+    
+    void arrange_arguments(){
+        //Inserts values in a map, key: function(ln, sin...) values: a vector containing the starting and ending positions for the arguments of the function and the chain rule iterations
+        give_functions(); //We detect and store the different functions
+        std::vector<std::size_t> brackets_positions = arrange_brackets(); //We get the sorted positions of all brackets
+        std::vector<int> arguments_positions; //This vector is stored in the map and cleared it contains the argument range and chain rule iterations
+        if(brackets_positions.size() > 2){ //If there are functions within functions or multiple functions one after the other
+            //First we check for functions with nothing but polynomials within them
+            functions_with_polynomials(brackets_positions, arguments_positions);
+            if(_d.size() == _functions.size()) //If there are no functions inside this function we can skip that processing
+                for(std::string function : _functions){
+                    iterate_argument(_d[function], _d[function][0],_d[function][1]);
+                }
+            else
+                functions_inside_functions(_functions, brackets_positions, arguments_positions);
+            for(std::string function : _functions){
+                iterate_argument(_d[function], _d[function][0], _d[function][1]);
+            }
+        }
+        else if(brackets_positions.size() == 2){ //If there is a single function
+            functions_with_polynomials(brackets_positions, arguments_positions);
+            for(std::string function : _functions){
+                iterate_argument(_d[function], _d[function][0], _d[function][1]);
+            }
+        }
+        else{ //If the expression is just a polynomial
+            std::vector<int> symbols_bag;
+            iterate_polynomial(symbols_bag);
+        }
+    }
+    
+    
+    void iterate_argument(std::vector<int> between_brackets, int init_pos, int end_pos){
+        for(int i = init_pos; i < end_pos; i++){
+            symbols_bag(between_brackets, _expression[i], i);
+        }
+        std::sort(between_brackets.begin(), between_brackets.end());
+    }
+    
+    void symbols_bag(std::vector<int> symbols_bag, char c, int index){
+        //_functions will be useless if the expression is non polynomical since the symbols´ positions will be stored in the function
+        switch(c){
+                
+            case '+' : symbols_bag.push_back(index);  break;
+                
+            case '-' : symbols_bag.push_back(index);  break;
+                
+            case '*' :  symbols_bag.push_back(index); _product_indices.push_back(index);  break;
+                
+            case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); break;
+                
+            case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); break;
+                
+        }
+    }
+    
+    void iterate_polynomial(std::vector<int> bag){
+        for(int i = 0; i < _expression.length(); i++){
+            symbols_bag(bag, _expression[i], i); //We store the positions for every symbol in our expression
+        }
+    }
+    
+    std::string differentiate_trigonometric(std::string function){
+        ;
+    }
+    
+    std::string differentiate_logarithmic(std::string function){
+        ;
+    }
+    
+    std::string differentiate_e(std::string function){
+        ;
+    }
+    
+    std::string differentiate_polynomial(std::string polynomial){
+        std::string derivative;
+        derivative = polynomial.assign(derivative.begin(), derivative.end() - 1);
+        return derivative;
+    }
+    
+    
+    std::string differentiate(std::string function){
+        std::string derivative;
+        if(function == "Ln" or function == "Log"){
+            derivative = differentiate_logarithmic(function);
+        }
+        else if(function == "sin" or function == "cos" or function == "tan" or function == "sec" or function == "cosec" or function == "cotan"){
+            derivative = differentiate_trigonometric(function);
+        }
+        else if(function == "e"){
+            derivative = differentiate_e(function);
+        }
+        else
+            derivative = differentiate_polynomial(function);
+        return derivative;
+    }
+    
+    
+    std::string product_rule(bool polynomic, int symbol_index){
+        std::tuple<std::string, std::string> f_g;
+        std::string derivative_a;
+        std::string derivative_b;
+        std::string function_a;
+        std::string function_b;
+        auto element = std::find(_functions.begin(), _functions.end(), symbol_index);
+        auto pos = std::distance(_functions.begin(), element);
+        if(polynomic){
+            function_a = give_previous_function(true, symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
+            function_b = give_function(symbol_index);
+            derivative_a = differentiate(function_a);
+            derivative_b = differentiate(function_b);
+            return derivative_a + "*" + function_b + "+" + function_a + "+" + derivative_b;
+        }
+        else{
+            //If no functions have been stored
+            function_a =
+            function_b = give_function(symbol_index);
+            derivative_a = differentiate(function_a);
+            derivative_b = differentiate(_functions[pos]);
+            return derivative_a + "*" + function_b + "+" + function_a + "+" + derivative_b;
+            
+        }
+    }
+    
+    std::string give_previous_function(bool polynomic, int index){
+        if(polynomic){
+            std::string monomial;
+            for(int i = index - 1; i > 0; i--){
+                if(isspace(_expression[i])){
+                    return monomial.assign(_expression, i + 1, index - 1); //It will return the monomial lying behind the symbol
+                }
+                else
+                    continue;
+            }
+        }
+        else{
+            ;
+        }
+    }
+    
+    std::string quotient_rule(std::string function){
+        ;
+    }
+    
+    derivative(std::string expression){
+        _expression = expression;
+    }
+    
+    
 };
 
 void autocalculus(){
