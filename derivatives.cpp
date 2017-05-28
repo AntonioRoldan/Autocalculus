@@ -12,6 +12,7 @@
 
 class derivative{
     
+    
 private:
     
     std::string _expression;
@@ -26,139 +27,191 @@ private:
     std::map<std::string, std::vector<char>> _b;
     std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
     std::map<std::string, std::vector<int>> _d;
+    std::multimap<std::string, std::vector<int>> _dr; //If there are repeated values
     std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _f;
     std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _h;
+    std::multimap<int, std::string> _hr;
     
+    bool _repeated_values = false;
     
 public:
     
     void give_functions(){
-        for(int i = 0; i < _expression.size();i++){
-            
-            switch(_expression[i]){
-                    
-                case 'l' :  if(_expression[i + 1] == 'n'){
-                    _functions.push_back("ln");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "ln";
-                    _h.insert(_g);
-                }
-                else if(_expression[i + 1] == 'o'){
-                    _functions.push_back("log");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "log";
-                    _h.insert(_g);
-                }
-                    break;
-                    
-                case 's' : if(_expression[i + 1] == 'i'){
-                    if(_expression[i - 3] == 'a')
-                        ;
-                    else{
-                        _functions.push_back("sin");
-                        _functions_indices.push_back(i);
-                        _g.first = i;
-                        _g.second = "sin";
-                        _h.insert(_g);
-                    }
-                }
-                else if(_expression[i + 1] == 'e'){
-                    _functions.push_back("sec");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "sec";
-                    _h.insert(_g);
-                }
-                    break;
-                    
-                case 'c' : if(_expression[i + 1] == 'o'){
-                    if(_expression[i - 2] == 'a')
-                        ;
-                    else{
-                        _functions.push_back("cos");
-                        _functions_indices.push_back(i);
-                        _g.first = i;
-                        _g.second = "cos";
-                        _h.insert(_g);
-                    }
-                }
-                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                    ;
-                else if(_expression[i + 3] == 'e'){
-                    _functions.push_back("cosec");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "cosec";
-                    _h.insert(_g);
-                }
-                else
-                    ;
-                    break;
-                    
-                case 'a': switch(_expression[i+3]){
+        bool done = false;
+        bool use_multimap = false; //We will start by assuming
+        while(!done){
+            for(int i = 0; i < _expression.size();i++){
+                
+                switch(_expression[i]){
                         
-                    case 'o': _functions.push_back("arcos");
-                        _functions_indices.push_back(i);
-                        _g.first = i;
-                        _g.second = "arcos";
-                        _h.insert(_g);
-                        break;
+                    case 'l' :  if(_expression[i + 1] == 'n'){
+                                    _functions.push_back("ln");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "ln";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                }
+                                else if(_expression[i + 1] == 'o'){
+                                        _functions.push_back("log");
+                                        _functions_indices.push_back(i);
+                                        _g.first = i;
+                                        _g.second = "log";
+                                        if(use_multimap)
+                                            _hr.insert(_g);
+                                        else
+                                            _h.insert(_g);
+                                }
+                                break;
                         
-                    case 's': _functions.push_back("arcsin");
-                        _functions_indices.push_back(i);
-                        _g.first = i;
-                        _g.second = "arcsin";
-                        _h.insert(_g);
-                        break;
+                    case 's' : if(_expression[i + 1] == 'i'){
+                                    if(_expression[i - 3] == 'a')
+                                        ;
+                                    else{
+                                        _functions.push_back("sin");
+                                        _functions_indices.push_back(i);
+                                        _g.first = i;
+                                        _g.second = "sin";
+                                        if(use_multimap)
+                                            _hr.insert(_g);
+                                        else
+                                            _h.insert(_g);
+                                    }
+                                }
+                                else if(_expression[i + 1] == 'e'){
+                                    _functions.push_back("sec");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "sec";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                }
+                                    break;
                         
+                    case 'c' : if(_expression[i + 1] == 'o'){
+                                    if(_expression[i - 2] == 'a')
+                                        ;
+                                    else{
+                                        _functions.push_back("cos");
+                                        _functions_indices.push_back(i);
+                                        _g.first = i;
+                                        _g.second = "cos";
+                                        if(use_multimap)
+                                            _hr.insert(_g);
+                                        else
+                                            _h.insert(_g);
+                                    }
+                                }
+                                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                                    ;
+                                else if(_expression[i + 3] == 'e'){
+                                    _functions.push_back("cosec");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "cosec";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                }
+                                else
+                                    ;
+                                    break;
                         
-                    case 't':  _functions.push_back("arctan");
-                        _functions_indices.push_back(i);
-                        _g.first = i;
-                        _g.second = "arctan";
-                        _h.insert(_g);
-                        break;
+                    case 'a': switch(_expression[i+3]){
+                            
+                        case 'o':   _functions.push_back("arcos");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "arcos";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                            
+                        case 's':   _functions.push_back("arcsin");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "arcsin";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                            
+                            
+                        case 't':   _functions.push_back("arctan");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "arctan";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                            }
+                                break;
                         
+                    case 't':   if(_expression[i - 3] == 'a')
+                                    ;
+                                else if(_expression[i - 2] == 'c'){
+                                    _functions.push_back("cotan");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i - 2;
+                                    _g.second = "cotan";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                                }
+                                else{
+                                    _functions.push_back("tan");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "tan";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                                }
+                                    break;
+                        
+                    case 'e':   if(_expression[i - 1] == 's')
+                                    ;
+                                else{
+                                    _functions.push_back("e");
+                                    _functions_indices.push_back(i);
+                                    _g.first = i;
+                                    _g.second = "e";
+                                    if(use_multimap)
+                                        _hr.insert(_g);
+                                    else
+                                        _h.insert(_g);
+                                    break;
+                                }
+                                    break;
                 }
-                    break;
-                    
-                case 't': if(_expression[i - 3] == 'a')
-                    ;
-                else if(_expression[i - 2] == 'c'){
-                    _functions.push_back("cotan");
-                    _functions_indices.push_back(i);
-                    _g.first = i - 2;
-                    _g.second = "cotan";
-                    _h.insert(_g);
-                    break;
-                }
-                else{
-                    _functions.push_back("tan");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "tan";
-                    _h.insert(_g);
-                    break;
-                }
-                    break;
-                    
-                case 'e': if(_expression[i - 1] == 's')
-                    ;
-                else{
-                    _functions.push_back("e");
-                    _functions_indices.push_back(i);
-                    _g.first = i;
-                    _g.second = "e";
-                    _h.insert(_g);
-                    break;
-                }
-                    break;
             }
-            
+            for(std::string func : _functions){
+                for(int i = 0; i < _functions.size(); i++){
+                    if(_functions[i] == func)
+                        _repeated_values = true;
+                }
+            }
+            if(!_repeated_values)
+                done = true;
+            else
+                _h.clear();
+            use_multimap = true;
         }
     }
     
@@ -169,13 +222,25 @@ public:
         std::vector<int> distances;
         int distance;
         std::size_t at;
-        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
-        for( indices iter = _h.begin(); iter != _h.end(); iter++){
-            distance = index - iter->first;
-            if(distance > 0)
-                distances.push_back(distance);
-            else
-                ;
+        if(!_repeated_values){ //If there are no repeated values we iterate through a map
+            typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
+            for( indices iter = _h.begin(); iter != _h.end(); iter++){
+                distance = index - iter->first;
+                if(distance > 0)
+                    distances.push_back(distance);
+                else
+                    continue;
+            }
+        }
+        else{ //Else we iterate through a multimap
+            typedef std::multimap<int, std::string>::const_iterator indicesr;
+            for(indicesr iter = _hr.begin(); iter != _hr.end(); iter++){
+                distance = index - iter->first;
+                if(distance > 0)
+                    distances.push_back(distance);
+                else
+                    continue;
+            }
         }
         auto min = std::min_element(std::begin(distances), std::end(distances));
         at = std::distance(distances.begin(), min);
@@ -254,7 +319,10 @@ public:
                 arguments_positions.push_back(ending_pos);
                 arguments_positions.push_back(_chain_rule);
                 _c.second = arguments_positions;
-                _d.insert(_c);
+                if(_repeated_values)
+                    _dr.insert(_c);
+                else
+                    _d.insert(_c);
                 arguments_positions.clear(); //Arguments is cleared for it to be used in the next iteration
             }
         }
@@ -302,7 +370,10 @@ public:
                             arguments_positions.push_back(_chain_rule);
                             brackets_positions.erase(brackets_positions.begin() + i); //We remove the outer bracket before the next iteration
                             _c.second = arguments_positions;
-                            _d.insert(_c);
+                            if(_repeated_values)
+                                _dr.insert(_c); //If there are repated values we will use a multimap
+                            else
+                                _d.insert(_c); //If not we store them in a map
                             arguments_positions.clear();
                             _chain_rule--;
                         }
@@ -336,6 +407,7 @@ public:
             for(std::string function : _functions){
                 iterate_argument(_d[function], _d[function][0], _d[function][1]);
             }
+            
         }
         else{ //If the expression is just a polynomial
             std::vector<int> symbols_bag;
@@ -375,7 +447,26 @@ public:
     }
     
     std::string differentiate_trigonometric(std::string function){
-        ;
+        
+        if(function == "sin")
+            return "cos]";
+        else if(function == "cos")
+            return "-sin]";
+        else if(function =="tan")
+            return "sec^2]"; //] will be replaced by the argument
+        else if(function == "sec")
+            return "sec]tan]";
+        else if(function == "cot")
+            return "-cosec^2]";
+        else if(function == "cosec")
+            return "-sin]";
+        else if(function == "arcsin")
+            return "1/sqrt(1 + ])";
+        else if(function == "arcos")
+            return "-1/sqrt( 1 + ])";
+        else
+            return "1/(1 + ])";
+        
     }
     
     std::string differentiate_logarithmic(std::string function){
@@ -411,44 +502,42 @@ public:
     
     
     std::string product_rule(bool polynomic, int symbol_index){
-        std::tuple<std::string, std::string> f_g;
         std::string derivative_a;
         std::string derivative_b;
         std::string function_a;
         std::string function_b;
-        auto element = std::find(_functions.begin(), _functions.end(), symbol_index);
-        auto pos = std::distance(_functions.begin(), element);
         if(polynomic){
-            function_a = give_previous_function(true, symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
+            function_a = give_previous_function(symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
             function_b = give_function(symbol_index);
             derivative_a = differentiate(function_a);
             derivative_b = differentiate(function_b);
             return derivative_a + "*" + function_b + "+" + function_a + "+" + derivative_b;
         }
         else{
-            //If no functions have been stored
-            function_a =
-            function_b = give_function(symbol_index);
-            derivative_a = differentiate(function_a);
-            derivative_b = differentiate(_functions[pos]);
-            return derivative_a + "*" + function_b + "+" + function_a + "+" + derivative_b;
-            
-        }
-    }
-    
-    std::string give_previous_function(bool polynomic, int index){
-        if(polynomic){
-            std::string monomial;
-            for(int i = index - 1; i > 0; i--){
-                if(isspace(_expression[i])){
-                    return monomial.assign(_expression, i + 1, index - 1); //It will return the monomial lying behind the symbol
+            if(!_repeated_values){
+                function_b = give_function(symbol_index);
+                for(int i = 0; i < _functions.size(); i++){
+                    if(_functions[i] == function_b){
+                        function_a = _functions[i - 1]; //It works since functions are stored in order of appearance
+                    }
                 }
-                else
-                    continue;
+                derivative_a = differentiate(function_a);
+                derivative_b = differentiate(function_b);
+                return derivative_a + "*" + function_b + "+" + function_a + "+" + derivative_b;
+            }
+            else{
+                ;
             }
         }
-        else{
-            ;
+    }
+    std::string give_previous_function(int index){
+        std::string monomial;
+        for(int i = index - 1; i > 0; i--){
+            if(isspace(_expression[i])){
+                return monomial.assign(_expression, i + 1, index - 1); //It will return the monomial lying behind the symbol
+            }
+            else
+                continue;
         }
     }
     
