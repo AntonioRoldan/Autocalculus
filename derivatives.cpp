@@ -6,9 +6,12 @@
 #include <vector>
 #include <set>
 #include <algorithm>
+#include <functional>
 #include <boost/algorithm/string/find.hpp>
 #include <tuple>
 #include <cctype>
+#include <math.h>
+#include <numeric>
 
 class derivative{
     
@@ -16,6 +19,7 @@ class derivative{
 private:
     
     std::string _expression;
+    bool _use_multimap = false;
     int _chain_rule; //Amount of times the chain rule must be computed
     std::vector<char> _arguments;
     std::vector<std::string> _functions;
@@ -32,7 +36,12 @@ private:
     std::map<std::size_t, bool> _f;
     std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _h;
-    std::multimap<int, std::string> _hr;
+    std::multimap<int, std::string> _hr; //Same for repeated values
+    std::pair<int, char> _i; //It assigns a symbol to an index
+    std::map<int, char> _j;
+    std::vector<std::string> _numbers = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+    std::vector<std::string> _function_numbers; //If function is raised to some power we want that power
+    std::vector<std::string> _polynomial_numbers; //It will be used to simplify algebraic expressions at the end of the program
     
     bool _repeated_values = false;
     
@@ -40,57 +49,42 @@ public:
     
     void give_functions(){
         bool done = false;
-        bool use_multimap = false; //We will start by assuming
         while(!done){
-            for(int i = 0; i < _expression.size();i++){
+            for(int i = 0; i < _expression.size(); i++){
                 
                 switch(_expression[i]){
                         
                     case 'l' :  if(_expression[i + 1] == 'n'){
-                                    _functions.push_back("ln");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "ln";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    if(_expression[i + 2] == '^'){
+                                        insert_function("ln^", i); //Inserts function and index in _g hash table
+                                    }
+                                    insert_function("ln", i);
                                 }
                                 else if(_expression[i + 1] == 'o'){
-                                        _functions.push_back("log");
-                                        _functions_indices.push_back(i);
-                                        _g.first = i;
-                                        _g.second = "log";
-                                        if(use_multimap)
-                                            _hr.insert(_g);
-                                        else
-                                            _h.insert(_g);
+                                    if(_expression[i + 2] == '^'){
+                                        insert_function("log^", i);
+                                    }
+                                    else
+                                        insert_function("log", i);
                                 }
-                                break;
+                                    break;
                         
-                    case 's' : if(_expression[i + 1] == 'i'){
+                    case 's' :  if(_expression[i + 1] == 'i'){
                                     if(_expression[i - 3] == 'a')
                                         ;
                                     else{
-                                        _functions.push_back("sin");
-                                        _functions_indices.push_back(i);
-                                        _g.first = i;
-                                        _g.second = "sin";
-                                        if(use_multimap)
-                                            _hr.insert(_g);
+                                        if(_expression[i + 2] == '^'){
+                                            insert_function("sin^", i); //Inserts function and index in _g hash table
+                                        }
                                         else
-                                            _h.insert(_g);
+                                            insert_function("sin", i);
                                     }
                                 }
                                 else if(_expression[i + 1] == 'e'){
-                                    _functions.push_back("sec");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "sec";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    if(_expression[i + 2] == '^'){
+                                        insert_function("sec^", i);
+                                    }
+                                    insert_function("sec", i);
                                 }
                                     break;
                         
@@ -98,89 +92,40 @@ public:
                                     if(_expression[i - 2] == 'a')
                                         ;
                                     else{
-                                        _functions.push_back("cos");
-                                        _functions_indices.push_back(i);
-                                        _g.first = i;
-                                        _g.second = "cos";
-                                        if(use_multimap)
-                                            _hr.insert(_g);
-                                        else
-                                            _h.insert(_g);
+                                        insert_function("cos", i);
                                     }
                                 }
                                 else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
                                     ;
                                 else if(_expression[i + 3] == 'e'){
-                                    _functions.push_back("cosec");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "cosec";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    insert_function("cosec", i);
                                 }
                                 else
                                     ;
                                     break;
                         
-                    case 'a': switch(_expression[i+3]){
+                    case 'a':  switch(_expression[i+3]){
                             
-                        case 'o':   _functions.push_back("arcos");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "arcos";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
-                                    break;
-                            
-                        case 's':   _functions.push_back("arcsin");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "arcsin";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
-                                    break;
-                            
-                            
-                        case 't':   _functions.push_back("arctan");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "arctan";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
-                                    break;
-                            }
+                                    case 'o':   insert_function("arcos", i);
+                                        break;
+                                        
+                                    case 's':   insert_function("arcsin", i);
+                                        break;
+                                        
+                                        
+                                    case 't':   insert_function("arctang", i);
+                                        break;
+                                }
                                 break;
                         
                     case 't':   if(_expression[i - 3] == 'a')
                                     ;
                                 else if(_expression[i - 2] == 'c'){
-                                    _functions.push_back("cotan");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i - 2;
-                                    _g.second = "cotan";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    insert_function("cotan", i);
                                     break;
                                 }
                                 else{
-                                    _functions.push_back("tan");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "tan";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    insert_function("tan", i);
                                     break;
                                 }
                                     break;
@@ -188,14 +133,7 @@ public:
                     case 'e':   if(_expression[i - 1] == 's')
                                     ;
                                 else{
-                                    _functions.push_back("e");
-                                    _functions_indices.push_back(i);
-                                    _g.first = i;
-                                    _g.second = "e";
-                                    if(use_multimap)
-                                        _hr.insert(_g);
-                                    else
-                                        _h.insert(_g);
+                                    insert_function("e", i);
                                     break;
                                 }
                                     break;
@@ -209,10 +147,23 @@ public:
             }
             if(!_repeated_values)
                 done = true;
-            else
+            else{
                 _h.clear();
-            use_multimap = true;
+                _use_multimap = true;
+            }
         }
+    }
+    
+    void insert_function(std::string function, int index){
+        //It inserts a function along with its index in a hash table
+        _functions.push_back(function);
+        _functions_indices.push_back(index);
+        _g.first = index - 2;
+        _g.second = function;
+        if(_use_multimap)
+            _hr.insert(_g);
+        else
+            _h.insert(_g);
     }
     
     std::string give_function(int index){
@@ -412,6 +363,7 @@ public:
         else{ //If the expression is just a polynomial
             std::vector<int> symbols_bag;
             iterate_polynomial(symbols_bag);
+            
         }
     }
     
@@ -423,19 +375,23 @@ public:
         std::sort(between_brackets.begin(), between_brackets.end());
     }
     
+    void classify_symbols(int index, char symbol){
+        _i.first = index; _i.second = symbol; _j.insert(_i);
+    }
+    
     void symbols_bag(std::vector<int> symbols_bag, char c, int index){
         //_functions will be useless if the expression is non polynomical since the symbols´ positions will be stored in the function
         switch(c){
                 
-            case '+' : symbols_bag.push_back(index);  break;
+            case '+' : symbols_bag.push_back(index); classify_symbols(index, '+'); break;
                 
-            case '-' : symbols_bag.push_back(index);  break;
+            case '-' : symbols_bag.push_back(index); classify_symbols(index, '-'); break;
                 
-            case '*' :  symbols_bag.push_back(index); _product_indices.push_back(index);  break;
+            case '*' :  symbols_bag.push_back(index);  _product_indices.push_back(index); classify_symbols(index, '*'); break;
                 
-            case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); break;
+            case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); classify_symbols(index, '/'); break;
                 
-            case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); break;
+            case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); classify_symbols(index, '^'); break;
                 
         }
     }
@@ -470,20 +426,118 @@ public:
     }
     
     std::string differentiate_logarithmic(std::string function){
-        ;
+        return "1/]";
     }
     
     std::string differentiate_e(std::string function){
-        ;
+        return function;
     }
     
-    std::string differentiate_polynomial(std::string polynomial){
+    std::string differentiate_monomial(std::string monomial){
         std::string derivative;
-        derivative = polynomial.assign(derivative.begin(), derivative.end() - 1);
+        derivative = monomial.assign(derivative.begin(), derivative.end() - 1); //We get rid of the x
         return derivative;
     }
     
+    bool is_polynomic(int index){
+        //Given a symbol index it will tell if its previous expression is polynomic
+        if(_expression[index - 2] == 'x')
+            return true;
+        else
+            return false;
+    }
     
+    int get_coefficient(int index){
+        std::string coefficient;
+        std::string::size_type sz; //Alias for size_t
+        for(int i = index; i > 0; i--){
+            if(isspace(_expression[i]))
+                if(is_polynomic(index))
+                    return std::stoi(coefficient.assign(_expression[i], _expression[index - 1]), &sz);
+                else
+                    return std::stoi(coefficient.assign(_expression[i], _expression[index]), &sz);
+                else
+                    continue;
+        }
+        return -1; //The compiler will jump if control reaches the end of a non-void function
+    }
+    
+    std::string algebraic_manipulations(std::vector<int> symbols_bag){
+        //It will split monomials and constants into two different groups to perform arithmetic operations on them
+        std::string monomial;
+        std::vector<int> coefficients; //We set the coefficients apart
+        std::vector<int> coefficients_operators;
+        std::vector<int> constants; //We set constants apart
+        std::vector<int> constants_operators;
+        int result;
+        for(int symbol : symbols_bag){
+            if(is_polynomic(symbol)){
+                coefficients.push_back(get_coefficient(symbol));
+                coefficients.push_back(get_coefficient(symbol));
+                coefficients_operators.push_back(symbol);
+            }
+            else{
+                constants.push_back(get_coefficient(symbol));
+                constants.push_back(get_coefficient(symbol));
+                constants_operators.push_back(symbol);
+            }
+        }
+        result = manipulate_expression(coefficients, coefficients_operators); //We start by manipulating coefficients
+        result = manipulate_expression(constants, constants_operators); //Next we operate with constants
+    }
+    
+    void fill_operands(std::vector<int> values, std::vector<int> operations, std::vector<int> operands, int i, char sign){
+        //Helper function for manipulate expression
+        for(int j = 0; j < values.size(); j++){
+            if(values[j] == operations[i]){
+                operands.push_back(operation(values[j], values[j + 1], sign));
+            }
+            else
+                continue;
+        }
+    }
+    
+    int manipulate_expression(std::vector<int> values, std::vector<int> operations){
+        std::vector<int> mul_results; //Product results
+        std::vector<int> div_results; //Division results
+        std::vector<int> sum_sub_results; //Sum and subtraction results
+        int result;
+        std::vector<char> signs;
+        char sign;
+        for(int i = 0; i < operations.size(); i++){
+            sign = _j[operations[i]];
+            if(sign == '*'){
+                fill_operands(values, operations, mul_results, i, sign);
+            }
+            else if(sign == '/'){
+                ;
+            }
+            else if(sign == '+' or sign == '-'){
+                fill_operands(values, operations, sum_sub_results, i, sign);
+            }
+        }
+        auto merged = mul_results; //Now we add the results of every multiplication and addition/subtraction
+        merged.insert(std::end(merged), std::begin(sum_sub_results), std::end(sum_sub_results));
+        result = std::accumulate(merged.begin(), merged.end(), 0);
+    }
+    
+    int operation(int first_number, int second_number, char operation){
+        
+        switch(operation){
+                
+            case '+' : return first_number + second_number; break;
+                
+            case '-' : return first_number + second_number; break;
+                
+            case '*' : return first_number - second_number; break;
+                
+            case '/' : return int(floor(first_number / second_number)); break; //Division operation must be an isolated case
+                
+            case '^' : return pow(first_number, second_number); break; //Exponential should really be considered as a function
+                
+            default : return -1; break;
+        }
+    }
     std::string differentiate(std::string function){
         std::string derivative;
         if(function == "Ln" or function == "Log"){
@@ -496,7 +550,7 @@ public:
             derivative = differentiate_e(function);
         }
         else
-            derivative = differentiate_polynomial(function);
+            derivative = differentiate_monomial(function);
         return derivative;
     }
     
@@ -540,7 +594,7 @@ public:
                 continue;
         }
     }
-    
+    //WRITE A FUNCTION THAT ITERATES THROUGH THE NUMBERS BETWEEN THE EXPONENTIAL SIGN AND THE BRACKETS
     std::string quotient_rule(std::string function){
         ;
     }
@@ -548,8 +602,6 @@ public:
     derivative(std::string expression){
         _expression = expression;
     }
-    
-    
 };
 
 void autocalculus(){
