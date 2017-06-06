@@ -47,7 +47,7 @@ class derivative{
     
     public:
         
-        void give_functions(){
+         void give_functions(){
             bool done = false;
             while(!done){
                 for(int i = 0; i < _expression.size(); i++){
@@ -80,6 +80,8 @@ class derivative{
                                                 insert_function("sin", i);
                                         }
                                     }
+                                    else if(_expression[i - 2] == 'c')
+                                        ;
                                     else if(_expression[i + 1] == 'e'){
                                         if(_expression[i + 2] == '^'){
                                             insert_function("sec^", i);
@@ -91,15 +93,17 @@ class derivative{
                         case 'c' : if(_expression[i + 1] == 'o'){
                                         if(_expression[i - 2] == 'a')
                                             ;
+                                        else if(_expression[i + 3] == 'e'){
+                                            insert_function("cosec", i);
+                                        }
                                         else{
                                             insert_function("cos", i);
                                         }
                                     }
                                     else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
                                         ;
-                                    else if(_expression[i + 3] == 'e'){
-                                        insert_function("cosec", i);
-                                    }
+                                    else if(_expression[i - 1] == 'c')
+                                        ;
                                     else
                                         ;
                                     break;
@@ -121,7 +125,7 @@ class derivative{
                         case 't':   if(_expression[i - 3] == 'a')
                                         ;
                                     else if(_expression[i - 2] == 'c'){
-                                        insert_function("cotan", i);
+                                        insert_function("cotan", i - 2);
                                         break;
                                     }
                                     else{
@@ -130,19 +134,15 @@ class derivative{
                                     }
                                         break;
                                         
-                        case 'e':   if(_expression[i - 1] == 's')
-                                        ;
-                                    else{
-                                        insert_function("e", i);
-                                        break;
-                                    }
-                                        break;
-                        }
-                }
-                for(std::string func : _functions){
-                    for(int i = 0; i < _functions.size(); i++){
-                        if(_functions[i] == func)
-                            _repeated_values = true;
+                    case 'e':   if(_expression[i - 1] == 's')
+                                    ;
+                                else if(_expression[i - 4] == 'c')
+                                    ;
+                                else{
+                                    insert_function("e", i);
+                                    break;
+                                }
+                                    break;
                     }
                 }
                 if(!_repeated_values)
