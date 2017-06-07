@@ -40,10 +40,11 @@ public:
     std::string give_function(int index);
     std::vector<int> brackets_bag();
     void find_scope();
-    derivative(std::string expression);
-    derivative& operator = (const derivative&) & = default;
-    derivative& operator = (derivative&&) & = default;
-    ~derivative();
+    derivative(std::string expression); //Copy constructor
+    derivative(derivative&&) = default; //Move constructor
+    derivative& operator = (const derivative&) & = default; //Move constructer
+    derivative& operator = (derivative&&) & = default; //Copy assignment operator
+    ~derivative(); //Destructor
 };
 
 void derivative::detect_functions(){
@@ -206,9 +207,9 @@ void derivative::insert_function(std::string function, int index){
     _index_to_functionp.first = index - 2;
     _index_to_functionp.second = function;
     if(_use_multimap)
-        _index_to_functionmr.insert(_index_to_functionmr);
+        _index_to_functionmr.insert(_index_to_functionp);
     else
-        _index_to_functionm.insert(_index_to_functionm);
+        _index_to_functionm.insert(_index_to_functionp);
 }
 
 std::string derivative::give_function(int index){
@@ -319,7 +320,7 @@ void derivative::find_scope(){
         }
     }
     typedef std::multimap<std::string, std::vector<int>>::const_iterator MapIterator;
-    for(MapIterator iter = _function_to_rangem.begin(); iter != _function_to_rangem.end(); iter++){
+    for(MapIterator iter = _function_to_rangemr.begin(); iter != _function_to_rangemr.end(); iter++){
         std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
         typedef std::vector<int>::const_iterator VectorIterator;
         for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
