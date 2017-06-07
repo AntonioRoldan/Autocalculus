@@ -16,640 +16,325 @@
 #include <stack>
 
 class derivative{
-    
-    
+
+
 private:
-    
+
     std::string _expression;
     bool _use_multimap = false;
-    int _chain_rule; //Amount of times the chain rule must be computed
-    std::vector<char> _arguments;
     std::vector<std::string> _functions;
     std::vector<int> _functions_indices;
-    std::vector<int> _product_indices;
-    std::vector<int> _quotient_indices;
-    std::vector<int> _exponential_indices;
-    std::pair<std::string, std::vector<char>> _a; //Function given as a string, argument given as a vector containing characters
-    std::map<std::string, std::vector<char>> _b;
-    std::pair<std::string, std::vector<int>> _c; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-    std::map<std::string, std::vector<int>> _d;
-    std::multimap<std::string, std::vector<int>> _dr; //If there are repeated values
-    std::pair<std::size_t, bool> _e; //Stores position of brackets and a boolean (false for '(' true for ')')
-    std::map<std::size_t, bool> _f;
-    std::pair<int, std::string> _g; //Stores each function as a key with its corresponding index in the expression
-    std::map<int, std::string> _h;
-    std::multimap<int, std::string> _hr; //Same for repeated values
-    std::pair<int, char> _i; //It assigns a symbol to an index
-    std::map<int, char> _j;
-    std::vector<std::string> _numbers = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
-    std::vector<std::string> _function_numbers; //If function is raised to some power we want that power
-    std::vector<std::string> _polynomial_numbers; //It will be used to simplify algebraic expressions at the end of the program
-    
+    std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+    std::map<std::string, std::vector<int>> _function_to_rangem;
+    std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
+    std::pair<std::size_t, bool> _position_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
+    std::map<std::size_t, bool> _position_to_bracketsm;
+    std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
+    std::map<int, std::string> _index_to_functionm;
+    std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
     bool _repeated_values = false;
-    
+
 public:
-    
-    void give_functions(){
-        bool done = false;
-        while(!done){
-            for(int i = 0; i < _expression.size(); i++){
-                
-                switch(_expression[i]){
-                        
-                    case 'l' :  if(_expression[i + 1] == 'n'){
-                                    if(_expression[i + 2] == '^'){
-                                        insert_function("ln^", i); //Inserts function and index in _g hash table
-                                    }
-                                    else
-                                        insert_function("ln", i);
-                                }
-                                else if(_expression[i + 1] == 'o'){
-                                    if(_expression[i + 2] == '^'){
-                                        insert_function("log^", i);
-                                    }
-                                    else
-                                        insert_function("log", i);
-                                }
-                                    break;
-                        
-                    case 's' : if(_expression[i + 1] == 'i'){
-                                    if(_expression[i - 3] == 'a')
-                                        ;
-                                    else if(_expression[i + 2] == '^'){
-                                            insert_function("sin^", i); //Inserts function and index in _g hash table
-                                    }
-                                    else
-                                        insert_function("sin", i);
-                                }
-                                else if(_expression[i - 2] == 'c'){
-                                    if(_expression[i + 1] == 'e'){
-                                        if(_expression[i + 2] == '^'){
-                                            insert_function("cosec^", i);
-                                        }
-                                        else
-                                            ;
-                                    }
-                                    else if(_expression[i - 1] == 'c'){
-                                        if(_expression[i + 2] == '^'){
-                                            insert_function("arcsin^", i);
-                                        }
-                                        else
-                                            insert_function("arcsin", i);
-                                    }
-                                    else{
-                                        if(_expression[i + 2] == '^'){
-                                            insert_function("cos^", i);
-                                        }
-                                        else
-                                            insert_function("cos", i);
-                                    }
-                                }
-                                else if(_expression[i + 1] == 'e'){
-                                    if(_expression[i + 3] == '^'){
-                                        insert_function("sec^", i);
-                                    }
-                                    else
-                                        insert_function("sec", i);
-                                }
-                                break;
-                        
-                    case 'c' : if(_expression[i + 1] == 'o'){
-                                    if(_expression[i - 2] == 'a')
-                                        ;
-                                    else if(_expression[i + 3] == 'e'){
-                                        insert_function("cosec", i);
-                                    }
-                                    else if(_expression[i + 2] == 's'){
-                                        insert_function("cos", i);
-                                    }
-                                }
-                                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                                    ;
-                                else if(_expression[i - 1] == 'e')
-                                    ;
-                                else
-                                    ;
-                                    break;
-                        
-                    case 'a': switch(_expression[i+3]){
-                            
-                        case 'o':   insert_function("arcos", i);
+    void detect_functions();
+    void insert_function(std::string function, int index);
+    std::string give_function(int index);
+    std::vector<int> brackets_bag();
+    void find_scope();
+    derivative(std::string expression);
+    derivative& operator = (const derivative&) & = default;
+    derivative& operator = (derivative&&) & = default;
+    ~derivative();
+};
+
+void derivative::detect_functions(){
+    int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
+    bool done = false;
+    while(!done){
+        for(int i = 0; i < _expression.size(); i++){
+
+            switch(_expression[i]){
+
+                case 'l' :  if(_expression[i + 1] == 'n'){
+                        if(_expression[i + 2] == '^'){
+                            insert_function("ln^", i);
+                            ln++;
+                        }
+                        else{
+                            insert_function("ln", i);
+                            ln++;
+                        }
+                    }
+                    else if(_expression[i + 1] == 'o'){
+                        if(_expression[i + 2] == '^'){
+                            insert_function("log^", i);
+
+                        }
+                        else
+                            insert_function("log", i);
+                        log++;
+                    }
+                    break;
+
+                case 's' : if(_expression[i + 1] == 'i'){
+                        if(_expression[i - 3] == 'a')
+                            ;
+                        else if(_expression[i + 2] == '^'){
+                            insert_function("sin^", i);
+                            sin++;
+                        }
+                        else
+                            insert_function("sin", i);
+                        sin++;
+                    }
+                    else if(_expression[i - 2] == 'c'){
+                        if(_expression[i + 1] == 'e'){
+                            if(_expression[i + 2] == '^'){
+                                insert_function("cosec^", i);
+                                cosec++;
+                            }
+                            else
+                                ;
+                        }
+                        else if(_expression[i - 1] == 'c'){
+                            if(_expression[i + 2] == '^'){
+                                insert_function("arcsin^", i);
+                                arcsin++;
+                            }
+                            else
+                                insert_function("arcsin", i);
+                            arcsin++;
+                        }
+                        else{
+                            if(_expression[i + 2] == '^'){
+                                insert_function("cos^", i);
+                                cos++;
+                            }
+                            else
+                                insert_function("cos", i);
+                            cos++;
+                        }
+                    }
+                    else if(_expression[i + 1] == 'e'){
+                        if(_expression[i + 3] == '^'){
+                            insert_function("sec^", i);
+                            sec++;
+                        }
+                        else
+                            insert_function("sec", i);
+                        sec++;
+                    }
+                    break;
+
+                case 'c' : if(_expression[i + 1] == 'o'){
+                        if(_expression[i - 2] == 'a')
+                            ;
+                        else if(_expression[i + 3] == 'e'){
+                            insert_function("cosec", i);
+                            cosec++;
+                        }
+                        else if(_expression[i + 2] == 's'){
+                            insert_function("cos", i);
+                            cos++;
+                        }
+                    }
+                    else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                        ;
+                    else if(_expression[i - 1] == 'e')
+                        ;
+                    else
+                        ;
+                    break;
+
+                case 'a': switch(_expression[i+3]){
+
+                        case 'o':   insert_function("arcos", i); arcos++;
                             break;
-                            
-                        case 's':   insert_function("arcsin", i);
+
+                        case 's':   insert_function("arcsin", i); arcsin++;
                             break;
-                            
-                            
-                        case 't':   insert_function("arctang", i);
+
+
+                        case 't':   insert_function("arctan", i); arctan++;
                             break;
                     }
+                    break;
+
+                case 't':   if(_expression[i - 3] == 'a')
+                        ;
+                    else if(_expression[i - 2] == 'c'){
+                        insert_function("cotan", i - 2);
+                        cotan++;
                         break;
-                        
-                    case 't':   if(_expression[i - 3] == 'a')
-                                    ;
-                                else if(_expression[i - 2] == 'c'){
-                                    insert_function("cotan", i - 2);
-                                    break;
-                                }
-                                else{
-                                    insert_function("tan", i);
-                                    break;
-                                }
-                                    break;
-                        
-                    case 'e':   if(_expression[i - 1] == 's')
-                                    ;
-                                else if(_expression[i - 3] == 'c')
-                                    ;
-                                else{
-                                    insert_function("e", i);
-                                    break;
-                                }
-                                    break;
-                }
-            }
-            if(!_repeated_values)
-                done = true;
-            else{
-                _h.clear();
-                _use_multimap = true;
-            }
-        }
-    }
-    
-    void insert_function(std::string function, int index){
-        //It inserts a function along with its index in a hash table
-        _functions.push_back(function);
-        _functions_indices.push_back(index);
-        _g.first = index - 2;
-        _g.second = function;
-        if(_use_multimap)
-            _hr.insert(_g);
-        else
-            _h.insert(_g);
-    }
-    
-    std::string give_function(int index){
-        //It will return a function given the index of its starting brackets
-        //It is given by calculating the distances between the brackets and all other functions.
-        //The minimum distance is used to find the index to the function that matches the brackets
-        std::vector<int> distances;
-        int distance;
-        std::size_t at;
-        if(!_repeated_values){ //If there are no repeated values we iterate through a map
-            typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
-            for( indices iter = _h.begin(); iter != _h.end(); iter++){
-                distance = index - iter->first;
-                if(distance > 0)
-                    distances.push_back(distance);
-                else
-                    continue;
-            }
-        }
-        else{ //Else we iterate through a multimap
-            typedef std::multimap<int, std::string>::const_iterator indicesr;
-            for(indicesr iter = _hr.begin(); iter != _hr.end(); iter++){
-                distance = index - iter->first;
-                if(distance > 0)
-                    distances.push_back(distance);
-                else
-                    continue;
-            }
-        }
-        auto min = std::min_element(std::begin(distances), std::end(distances));
-        at = std::distance(distances.begin(), min);
-        return _h[index - distances[static_cast<int>(at)]];
-    }
-    
-    std::vector<int> brackets_bag(){
-        //It collects the positions of starting brackets
-        std::vector<int> brackets_positions;
-        std::vector<std::vector<std::size_t>> positions;
-        boost::iterator_range<std::string::iterator> pos;
-        std::size_t bracket_index;
-        int occurrence = 0; //Starting brackets occurences
-        int occurrenceb = 0; //Ending brackets occurences
-        for(char& c : _expression){
-            if(c  == '('){ //It stores every index of a starting bracket in sb
-                pos = boost::find_nth(_expression, "(", occurrence); //Find the nth occurence
-                bracket_index = distance(_expression.begin(), pos.begin());
-                brackets_positions.push_back(static_cast<int>(distance(_expression.begin(), pos.begin())) - 2);
-                _e.first = bracket_index - 2;
-                _e.second = true;
-                _f.insert(_e);
-                occurrence++;
-            }
-            else if(c == ')'){
-                pos = boost::find_nth(_expression, ")", occurrenceb);
-                bracket_index = distance(_expression.begin(), pos.begin());
-                brackets_positions.push_back(static_cast<int>(bracket_index) - 2);
-                _e.first = bracket_index - 2;
-                _e.second = false;
-                _f.insert(_e);
-                occurrenceb++;
-            }
-        }
-        return brackets_positions;
-    }
-    
-   
-    
-    void arrange_arguments(){
-        give_functions();
-        std::vector<int> brackets_positions = brackets_bag();
-        std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
-        int single_bracket; //A bracket looking for a partner
-        std::vector<int> arguments_range;
-        for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
-            if(_f[brackets_positions[i]] == false){
-                if(_f[brackets_positions[i - 1]] == false){
-                    pending_brackets.push(brackets_positions[i]);
-                }
-                else{
-                    arguments_range.push_back(brackets_positions[i] + 2);
-                    arguments_range.push_back(brackets_positions[i - 1] + 2);
-                    _c.first = give_function(brackets_positions[i]);
-                    _c.second = arguments_range;
-                    _d.insert(_c);
-                    arguments_range.clear();
-                }
-            }
-            else{
-                if(_f[brackets_positions[i + 1]] == false){
-                    ;
-                }
-                else{
-                    single_bracket = pending_brackets.top();
-                    arguments_range.push_back(single_bracket + 2);
-                    arguments_range.push_back(brackets_positions[i] + 2);
-                    pending_brackets.pop();
-                    _c.first = give_function(brackets_positions[i]);
-                    _c.second = arguments_range;
-                    _d.insert(_c);
-                    arguments_range.clear();
-                }
-            }
-        }
-        typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-        for(MapIterator iter = _d.begin(); iter != _d.end(); iter++){
-        std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-        typedef std::vector<int>::const_iterator VectorIterator;
-        for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-        std::cout << " " << *vect_iter << std::endl;
-        }
-        }
-    }
-    
-    std::vector<std::size_t> mergesubvectors(std::vector<std::vector<std::size_t>> vector){
-        auto merged = vector[0];
-        merged.insert(std::end(merged), std::begin(vector[1]), std::end(vector[1]));
-        return merged;
-    }
-    
-    void iterate_argument(std::vector<int> between_brackets, int init_pos, int end_pos){
-        for(int i = init_pos; i < end_pos; i++){
-            symbols_bag(between_brackets, _expression[i], i);
-        }
-        std::sort(between_brackets.begin(), between_brackets.end());
-    }
-    
-    void classify_symbols(int index, char symbol){
-        _i.first = index; _i.second = symbol; _j.insert(_i);
-    }
-    
-    void symbols_bag(std::vector<int> symbols_bag, char c, int index){
-        //_functions will be useless if the expression is non polynomical since the symbols´ positions will be stored in the function
-        switch(c){
-                
-            case '+' : symbols_bag.push_back(index); classify_symbols(index, '+'); break;
-                
-            case '-' : symbols_bag.push_back(index); classify_symbols(index, '-'); break;
-                
-            case '*' :  symbols_bag.push_back(index);  _product_indices.push_back(index); classify_symbols(index, '*'); break;
-                
-            case '/' :  symbols_bag.push_back(index); _quotient_indices.push_back(index); classify_symbols(index, '/'); break;
-                
-            case '^' : symbols_bag.push_back(index);  _exponential_indices.push_back(index); classify_symbols(index, '^'); break;
-                
-        }
-    }
-    
-    void iterate_polynomial(std::vector<int> bag){
-        for(int i = 0; i < _expression.length(); i++){
-            symbols_bag(bag, _expression[i], i); //We store the positions for every symbol in our expression
-        }
-    }
-    
-    std::string differentiate_trigonometric(std::string function){
-        
-        if(function == "sin")
-            return "cos]";
-        else if(function == "cos")
-            return "-sin]";
-        else if(function =="tan")
-            return "sec^2]"; //] will be replaced by the argument
-        else if(function == "sec")
-            return "sec]tan]";
-        else if(function == "cot")
-            return "-cosec^2]";
-        else if(function == "cosec")
-            return "-sin]";
-        else if(function == "arcsin")
-            return "1/sqrt(1 + ])";
-        else if(function == "arcos")
-            return "-1/sqrt( 1 + ])";
-        else
-            return "1/(1 + ])";
-        
-    }
-    
-    std::string differentiate_logarithmic(std::string function){
-        return "1/]";
-    }
-    
-    std::string differentiate_e(std::string function){
-        return function;
-    }
-    
-    std::string differentiate_monomial(std::string monomial){
-        std::string derivative;
-        derivative = monomial.assign(derivative.begin(), derivative.end() - 1); //We get rid of the x
-        return derivative;
-    }
-    
-    bool is_polynomic(int index){
-        //Given a symbol index it will tell if its previous expression is polynomic
-        if(_expression[index - 2] == 'x')
-            return true;
-        else
-            return false;
-    }
-    
-    int get_coefficient(int index){
-        std::string coefficient;
-        std::string::size_type sz; //Alias for size_t
-        for(int i = index; i > 0; i--){
-            if(isspace(_expression[i]))
-                if(is_polynomic(index))
-                    return std::stoi(coefficient.assign(_expression[i], _expression[i - 2]), &sz); //Check for possible bug*****
-                else
-                    return std::stoi(coefficient.assign(_expression[i], _expression[i]), &sz);
-                else
-                    continue;
-        }
-        return -1; //The compiler will jump if control reaches the end of a non-void function
-    }
-    
-    std::string algebraic_manipulations(std::vector<int> symbols_bag){
-        //It will split monomials and constants into two different groups to perform arithmetic operations on them
-        std::string monomial;
-        std::vector<int> coefficients; //We set the coefficients apart
-        std::vector<int> coefficients_operators;
-        std::vector<int> constants; //We set constants apart
-        std::vector<int> constants_operators;
-        int coefficients_result;
-        int constants_result;
-        for(int symbol : symbols_bag){
-            if(is_polynomic(symbol)){
-                coefficients.push_back(get_coefficient(symbol));
-                coefficients.push_back(get_coefficient(symbol));
-                coefficients_operators.push_back(symbol);
-            }
-            else{
-                constants.push_back(get_coefficient(symbol));
-                constants.push_back(get_coefficient(symbol));
-                constants_operators.push_back(symbol);
-            }
-        }
-        coefficients_result = arrange_expression(coefficients, coefficients_operators); //We start by manipulating coefficients
-        constants_result = arrange_expression(constants, constants_operators); //Next we operate with constants
-        return "joder";
-    }
-    
-    int fill_operands(std::vector<int> values, std::vector<int> operations, std::vector<int> operands, int i, char sign, int previous){ //Check for possible bug important testing ******
-        //Helper function for manipulate expression
-        int result;
-        if(sign == '\\'){
-            for(int j = 0; j < values.size(); j++){
-                if(values[j] == operations[i]){
-                    if(_j[values[j - 3]] == '+'|| ((_j[values[j - 3]] == '-'  || (_j[values[j - 3]] == '*')) && (_j[values[j - 8]] != '\\'))){ //If there is a number being added or subtracted to a fraction
-                        int number = values[j - 5];
-                        int numerator = values[j -1];
-                        int denominator = values[j + 2];
-                        algebraic_fractions(number, 0, numerator, denominator, sign);
-                    }
-                    else if(_j[values[j - 3]] == '+'|| ((_j[values[j - 3]] == '-' || (_j[values[j - 3]] == '*')) && (_j[values[j - 8]] == '\\'))){
-                        //If there is an operation involving two fractions
-                        int numerator1 = values[j - 7];
-                        int denominator1 = values[j - 5];
-                        int numerator2 = values[j - 1];
-                        int denominator2 = values[j + 2];
-                        algebraic_fractions(numerator1, denominator1, numerator2, denominator2, sign);
                     }
                     else{
-                        ;
+                        insert_function("tan", i);
+                        tan++;
+                        break;
                     }
-                }
-                else
-                    continue;
-            }
-        }
-        else if(sign == '*'){
-            for(int j = 0; j < values.size(); j++){
-                if(values[j] == operations[i] && (!previous || (previous != values[j -2]))){
-                    if(_j[values[j + 3] == '\\']) //If there is a division in front of it, the previous block will deal with it
+                    break;
+
+                case 'e':   if(_expression[i - 1] == 's')
+                        ;
+                    else if(_expression[i - 3] == 'c')
                         ;
                     else{
-                        result = operation(values[j - 2], values[j + 2], sign);
-                        operands.push_back(result);
-                        return values[j + 2];
+                        insert_function("e", i);
+                        e++;
+                        break;
                     }
-                    
-                }
-                else
-                    return previous;
+                    break;
             }
         }
+        if(ln >= 2 or log >= 2 or sin >= 2 or cos >= 2 or tan >= 2 or sec >= 2 or cosec >= 2 or cotan >= 2 or arcsin >= 2 or arcos >= 2 or arctan >= 2 or e >= 2){
+            _repeated_values = true;
+        }
+        if(!_repeated_values)
+            done = true;
+        else if(_use_multimap)
+            done = true;
         else{
-            for(int j = 0; j < values.size(); j++){
-                if(values[j] == operations[i] && (!previous || (previous != values[j - 2]))){ //3+4+8 should be operated as first 3+4 then 7 + 8
-                    previous = values[j + 2]; //We don´t want the value that was already operated to be taken into account throughout the loop
-                    if(values[j + 3] == '\\')
-                        ;
-                    else if(values[j + 4] == '*'){
-                        ;
-                    }
-                    else{
-                        result = operation(values[j - 2], values[j + 2], sign);
-                        operands.push_back(result); //We perform the operation on the previous and next values before    storing them in a list
-                        return values[j + 2];
-                    }
-                }
-                else
-                    return previous;
-            }
-        }
-        return previous;  //This will never be reached but the compiler complains if control reaches end of non-void function
-    }
-    
-    std::string algebraic_fractions(int numerator1, int denominator1, int numerator2, int denominator2, char sign){
-        int mul = numerator1 * denominator2;
-        std::string result;
-        if(!denominator1){ //We process a single scalar along with a function
-            switch(sign){
-                    
-                case '+' : result = std::to_string(mul + numerator2) + '\\' + std::to_string(denominator2);
-                    break;
-                    
-                case '-' : result = std::to_string(mul - numerator2) + '\\' + std::to_string(denominator2);
-                    break;
-                    
-                case '*' : result = std::to_string(numerator1 * numerator2) + '\\' + std::to_string(denominator2);
-                    break;
-                    
-                case '\\' : result = std::to_string(mul) + '\\' + std::to_string(numerator2);
-                    break;
-            }
-        }else{ //We process operations between two fractions
-            int denominator = denominator1 * denominator2;
-            switch(sign){
-                    
-                case '+' : {
-                    numerator1 = denominator2 * numerator1;
-                    numerator2 = denominator1 * numerator2;
-                    result = std::to_string(numerator1 + numerator2) + '\\' + std::to_string(denominator);
-                    break;
-                }
-                    
-                case '-' :  {
-                    numerator1 = denominator2 * numerator1;
-                    numerator2 = denominator1 * numerator2;
-                    result = std::to_string(numerator1 - numerator2) + '\\' + std::to_string(denominator);
-                    break;
-                }
-                    
-                case '*' : result = std::to_string(numerator1 * numerator2) + '\\' + std::to_string(denominator);
-                    break;
-                    
-                case '\\' : result = std::to_string(numerator1 * denominator2) + '\\' + std::to_string(denominator1 * numerator2);
-                    break;
-            }
-            
-        }
-        return result;
-    }
-    
-    
-    int arrange_expression(std::vector<int> values, std::vector<int> operations){
-        std::vector<int> mul_results; //Product results
-        std::vector<int> div_results; //Division results
-        std::vector<int> sum_sub_results; //Sum and subtraction results
-        int result;
-        std::vector<char> signs;
-        char sign;
-        int previous = 0;
-        for(int i = 0; i < operations.size(); i++){
-            sign = _j[operations[i]];
-            if(sign == '*'){
-                previous = fill_operands(values, operations, mul_results, i, sign, previous);
-            }
-            else if(sign == '/'){
-                previous = fill_operands(values, operations, div_results, i, sign, previous);
-            }
-            else if(sign == '+' or sign == '-'){
-                previous = fill_operands(values, operations, sum_sub_results, i, sign, previous);
-            }
-        }
-        auto merged = mul_results; //Now we add the results of every multiplication and addition/subtraction
-        merged.insert(std::end(merged), std::begin(sum_sub_results), std::end(sum_sub_results));
-        result = std::accumulate(merged.begin(), merged.end(), 0);
-        return 7;
-    }
-    
-    int operation(int first_number, int second_number, char operation){
-        
-        switch(operation){
-                
-            case '+' : return first_number + second_number; break;
-                
-            case '-' : return first_number + second_number; break;
-                
-            case '*' : return first_number - second_number; break;
-                
-            case '/' : return int(floor(first_number / second_number)); break; //Division operation must be an isolated case
-                
-            case '^' : return pow(first_number, second_number); break; //Exponential should really be considered as a function
-                
-            default : return -1; break;
+            _use_multimap = true;
         }
     }
-    std::string differentiate(std::string function){
-        std::string derivative;
-        if(function == "Ln" or function == "Log"){
-            derivative = differentiate_logarithmic(function);
-        }
-        else if(function == "sin" or function == "cos" or function == "tan" or function == "sec" or function == "cosec" or function == "cotan"){
-            derivative = differentiate_trigonometric(function);
-        }
-        else if(function == "e"){
-            derivative = differentiate_e(function);
-        }
-        else
-            derivative = differentiate_monomial(function);
-        return derivative;
-    }
-    
-    
-    std::string product_rule(bool polynomic, int symbol_index){
-        std::string derivative_a;
-        std::string derivative_b;
-        std::string function_a;
-        std::string function_b;
-        if(polynomic){
-            function_a = give_previous_function(symbol_index); //give_function will give the function lying on the right side (it searches for the closes function)
-            function_b = give_function(symbol_index);
-            derivative_a = differentiate(function_a);
-            derivative_b = differentiate(function_b);
-            return derivative_a + "*" + function_b + "+" + function_a + "*" + derivative_b;
-        }
-        else{
-            if(!_repeated_values){
-                function_b = give_function(symbol_index);
-                for(int i = 0; i < _functions.size(); i++){
-                    if(_functions[i] == function_b){
-                        function_a = _functions[i - 1]; //It works since functions are stored in order of appearance
-                    }
-                }
-                derivative_a = differentiate(function_a);
-                derivative_b = differentiate(function_b);
-                return derivative_a + "*" + function_b + "+" + function_a + "*" + derivative_b;
-            }
-            else{
-                ;
-            }
-        }
-        return "joder";
-    }
-    std::string give_previous_function(int index){
-        std::string monomial;
-        for(int i = index - 1; i > 0; i--){
-            if(isspace(_expression[i])){
-                return monomial.assign(_expression, i + 1, index - 1); //It will return the monomial lying behind the symbol
-            }
+}
+
+
+void derivative::insert_function(std::string function, int index){
+    //It inserts a function along with its index in a hash table
+    _functions.push_back(function);
+    _functions_indices.push_back(index);
+    _index_to_functionp.first = index - 2;
+    _index_to_functionp.second = function;
+    if(_use_multimap)
+        _index_to_functionmr.insert(_index_to_functionmr);
+    else
+        _index_to_functionm.insert(_index_to_functionm);
+}
+
+std::string derivative::give_function(int index){
+    //It will return a function given the index of its starting brackets
+    //It is given by calculating the distances between the brackets and all other functions.
+    //The minimum distance is used to find the index to the function that matches the brackets
+    std::vector<int> distances;
+    int distance;
+    std::size_t at;
+    if(!_repeated_values){ //If there are no repeated values we iterate through a map
+        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _h map (see above)
+        for( indices iter = _index_to_functionm.begin(); iter != _index_to_functionm.end(); iter++){
+            distance = index - iter->first;
+            if(distance > 0)
+                distances.push_back(distance);
             else
                 continue;
         }
-        return "joder";
     }
-    //WRITE A FUNCTION THAT ITERATES THROUGH THE NUMBERS BETWEEN THE EXPONENTIAL SIGN AND THE BRACKETS
-    std::string quotient_rule(std::string function){
-        return "joder";
+    else{ //Else we iterate through a multimap
+        typedef std::multimap<int, std::string>::const_iterator indicesr;
+        for(indicesr iter = _index_to_functionmr.begin(); iter != _index_to_functionmr.end(); iter++){
+            distance = index - iter->first;
+            if(distance > 0)
+                distances.push_back(distance);
+            else
+                continue;
+        }
     }
-    
-    derivative(std::string expression){
-        _expression = expression;
+    auto min = std::min_element(std::begin(distances), std::end(distances));
+    at = std::distance(distances.begin(), min);
+    return _index_to_functionm[index - distances[static_cast<int>(at)]];
+}
+
+ std::vector<int> derivative::brackets_bag(){
+    //It collects the positions of starting brackets
+    std::vector<int> brackets_positions;
+    std::vector<std::vector<std::size_t>> positions;
+    boost::iterator_range<std::string::iterator> pos;
+    std::size_t bracket_index;
+    int occurrence = 0; //Starting brackets occurences
+    int occurrenceb = 0; //Ending brackets occurences
+    for(char& c : _expression){
+        if(c  == '('){ //It stores every index of a starting bracket in sb
+            pos = boost::find_nth(_expression, "(", occurrence); //Find the nth occurence
+            bracket_index = distance(_expression.begin(), pos.begin());
+            brackets_positions.push_back(static_cast<int>(distance(_expression.begin(), pos.begin())) - 2);
+            _position_to_bracketsp.first = bracket_index - 2;
+            _position_to_bracketsp.second = true;
+            _position_to_bracketsm.insert(_position_to_bracketsp);
+            occurrence++;
+        }
+        else if(c == ')'){
+            pos = boost::find_nth(_expression, ")", occurrenceb);
+            bracket_index = distance(_expression.begin(), pos.begin());
+            brackets_positions.push_back(static_cast<int>(bracket_index) - 2);
+            _position_to_bracketsp.first = bracket_index - 2;
+            _position_to_bracketsp.second = false;
+            _position_to_bracketsm.insert(_position_to_bracketsp);
+            occurrenceb++;
+        }
     }
-};
+    return brackets_positions;
+}
+
+
+
+void derivative::find_scope(){
+    detect_functions();
+    std::vector<int> brackets_positions = brackets_bag();
+    std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
+    int single_bracket; //A bracket looking for a partner
+    std::vector<int> arguments_range;
+    for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
+        if(_position_to_bracketsm[brackets_positions[i]] == false){
+            if(_position_to_bracketsm[brackets_positions[i - 1]] == false){
+                pending_brackets.push(brackets_positions[i]);
+            }
+            else{
+                arguments_range.push_back(brackets_positions[i] + 2);
+                arguments_range.push_back(brackets_positions[i - 1] + 2);
+                _function_to_rangep.first = give_function(brackets_positions[i]);
+                _function_to_rangep.second = arguments_range;
+                if(!_repeated_values)
+                    _function_to_rangem.insert(_function_to_rangep);
+                else
+                    _function_to_rangemr.insert(_function_to_rangep);
+                arguments_range.clear();
+            }
+        }
+        else{
+            if(_position_to_bracketsm[brackets_positions[i + 1]] == false){
+                ;
+            }
+            else{
+                single_bracket = pending_brackets.top();
+                arguments_range.push_back(single_bracket + 2);
+                arguments_range.push_back(brackets_positions[i] + 2);
+                pending_brackets.pop();
+                _function_to_rangep.first = give_function(brackets_positions[i]);
+                _function_to_rangep.second = arguments_range;
+                if(!_repeated_values)
+                    _function_to_rangem.insert(_function_to_rangep);
+                else
+                    _function_to_rangemr.insert(_function_to_rangep);
+                arguments_range.clear();
+            }
+        }
+    }
+    typedef std::multimap<std::string, std::vector<int>>::const_iterator MapIterator;
+    for(MapIterator iter = _function_to_rangem.begin(); iter != _function_to_rangem.end(); iter++){
+        std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
+        typedef std::vector<int>::const_iterator VectorIterator;
+        for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
+            std::cout << " " << *vect_iter << std::endl;
+        }
+    }
+}
+
+derivative::derivative(std::string expression){
+    _expression = expression;
+}
+
+derivative::~derivative(){
+
+}
 
 void autocalculus(){
     char input[100];
@@ -669,7 +354,7 @@ void autocalculus(){
         std::cout <<"                                   Please, enter the function to be differentiated\n                                 " << std::endl;
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
-        function.arrange_arguments();
+        function.find_scope();
         break;
     }
 }
@@ -684,7 +369,7 @@ void autocalculus(){
 //}
 
 int main(){
-    
+
     autocalculus();
     getchar();
     return 0;
