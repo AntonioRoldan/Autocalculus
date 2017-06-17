@@ -27,19 +27,23 @@ private:
     bool _use_multimap = false;
     std::vector<std::string> _functions;
     std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z'};
-    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
+    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')', '^'};
     std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
     std::map<std::string, std::vector<int>> _function_to_rangem;
     std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
     std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _index_to_bracketsm;
-    std::pair<char, std::vector<int>> _symbols_classificationp;
+    std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
     std::map<char,std::vector<int>> _symbols_classificationm;
     std::pair<int , char> _index_to_symbolsp;
     std::map<int, char> _index_to_symbolsm;
     std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _index_to_functionm;
     std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
+    std::pair<std::tuple<int, int>, std::tuple<std::string, int, char,int>> _range_to_functionp; //Keys: function's range Values: function type, previous sign, exponentiation and depth
+    std::multimap<std::tuple<int,int>, std::tuple<std::string, int, char, int>> _range_to_functionm;
+    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
+    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
     bool _repeated_values = false;
 
 public:
@@ -61,7 +65,7 @@ public:
     ~derivative(); //Destructor
 };
 
-void derivative::detect_functions(){
+void derivative::detect_functions(){ //Refactoring needed
     int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
     int index;
     bool done = false;
@@ -428,9 +432,13 @@ void derivative::find_scopes(){
     }
 }
 
-void derivative::find_functions_inside() {
-    bool done = false;
+void derivative::find_functions_inside() { //Refactoring needed
+    bool inside;
+    int depth;
+    int order;
+    std::vector<std::tuple<int, int>> order_depth;
     std::vector<int> indices_buffer;
+    std::tuple<int, int> pivot;
     if(!_repeated_values){
         for(std::string func : _functions){
             _function_ranges.push(std::make_tuple(_function_to_rangem[func][1], _function_to_rangem[func][0]));
@@ -451,10 +459,60 @@ void derivative::find_functions_inside() {
                     continue;
             }
         }
-        while(!_function_ranges.empty()){
-            std::cout<<std::get<0>(_function_ranges.front()) << "\t" << std::get<1>(_function_ranges.front()) << std::endl;
-            _function_ranges.pop();
+    }
+    while(!_function_ranges.empty()){
+        depth = 0;
+        order = 0;
+        pivot = _function_ranges.front();
+        _function_ranges.pop();
+        if(!_function_to_inside_functionm.empty()){
+            typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator MapIterator; //We calculate the depth by checking if the function exists in other functions
+            for(MapIterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+                auto found = std::find(iter->second.begin(), iter->second.end(), pivot);
+                if(found != iter->second.end()){
+                    inside = true;
+                    depth += 1;
+                }
+                else
+                    continue;
+            }
+            if(!inside){ //If function is not inside any function we have depth 0
+                //If it is level 0 we can check its order without caring about other functions being stored previously
+                for(int i = 0; i < order_depth.size(); i++){
+                    if(std::get<0>(order_depth[i]) == depth){
+                        order++;
+                    }
+                    else
+                        continue;
+                }
+                order_depth.push_back(std::make_tuple(depth, order));
+                //insert_into_OD_to_SE
+            }
+            else { //If it is not inside, the order_depth vector has already been filled
+                for (unsigned i = (int) order_depth.size(); i-- > 0;) { //We make sure that the new tuple is stored with the right order value, comparing with previously stored tuples
+                    if(std::get<0>(order_depth[i]) > depth){
+                        continue;
+                    }
+                    else if(std::get<0>(order_depth[i]) < depth){ //If previous value has lower depth, our new order value will always be 1
+                        order = 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        //insert_into_OD_to_SE
+                        break;
+                    }
+                    else{
+                        order = std::get<1>(order_depth[i]) + 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        //insert_into_OD_to_SE
+                        break;
+                    }
+                }
+            }
+        }else{
+            order = 1;
+            order_depth.push_back(std::make_tuple(depth, order));
+            //insert_into_OD_to_SE
         }
+        //continue...
     }
 }
 
@@ -470,7 +528,7 @@ void autocalculus(){
     char input[100];
     while(true){
         std::cout <<"                                               <---Auto Calculus--->\n\n\n";
-        std::cout <<"                                   Please, enter the function to be differentiated\n                                 " << std::endl;
+        std::cout <<"                                         Enter function to be differentiated\n                                 " << std::endl;
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
         function.find_scopes();
