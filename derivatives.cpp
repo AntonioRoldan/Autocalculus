@@ -242,17 +242,6 @@ void derivative::detect_functions(){ //Refactoring needed
 }
 
 
-void derivative::test0(){
-    typedef std::map<char, std::vector<int>>::const_iterator iter;
-    for(iter it = _symbols_classificationm.begin(); it != _symbols_classificationm.end(); it++){
-        std::cout<< it->first << std::endl;
-        typedef std::vector<int>::const_iterator Vectoriter;
-        for(Vectoriter iter = it->second.begin(); iter != it->second.end(); iter++){
-            std::cout<<*iter<<std::endl;
-        }
-        std::cout<<it->second.size()<<std::endl;
-    }
-}
 
 bool derivative::isNumber(char &number) {
     auto pos = std::find(_numbers.begin(), _numbers.end(), number);
@@ -444,16 +433,6 @@ void derivative::find_scopes(){
     }
 }
 
-void derivative::test4(){
-    typedef std::map<std::string, std::vector<int>>::const_iterator MapIterator;
-    for(MapIterator iter = _function_to_rangem.begin(); iter != _function_to_rangem.end(); iter++){
-        std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-        typedef std::vector<int>::const_iterator VectorIterator;
-        for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-            std::cout << " " << *vect_iter << std::endl;
-        }
-    }
-}
 
 void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD){
     _SE_to_ODp.first = SE;
@@ -627,31 +606,6 @@ void derivative::find_functions_inside() { //Refactoring needed
     }
 }
 
-void derivative::test1(){
-    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
-    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Inside: ";
-        for(const auto &i : iter->second){
-            std::cout<<std::get<0>(i) << "\t" << std::get<1>(i) << "\n" << std::endl;
-        }
-    }
-}
-
-void derivative::test2(){
-    typedef std::map<std::tuple<int,int>, std::tuple<std::string, int, char, int>>::const_iterator Iterator;
-    for(Iterator iter = _range_to_functionm.begin(); iter != _range_to_functionm.end(); iter++){
-        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Function: \n";
-        std::cout<< std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << "\t" << std::get<2>(iter->second)
-             <<"\t" << std::get<3>(iter->second) << "\n\n"<<std::endl;
-    }
-}
-
-void derivative::test3(){
-    typedef std::map<std::tuple<int, int>, std::tuple<int, int>>::const_iterator Iterator;
-    for(Iterator iter = _SE_to_OD.begin(); iter != _SE_to_OD.end(); iter++){
-        std::cout<<"SE: "<< std::get<0>(iter->first) << "\t" << std::get<1>(iter->first) << "\nOD: " << std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << std::endl;
-    }
-}
 
 derivative::derivative(std::string expression){
     _expression = expression;
