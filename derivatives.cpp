@@ -396,10 +396,7 @@ void derivative::find_scopes(){
     for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
         if(!_index_to_bracketsm[brackets_positions[i]]){ //If brackets are ending brackets ')'
             if(!_index_to_bracketsm[brackets_positions[i - 1]]){ //If its previous brackets are also ending brackets
-                if(brackets_positions[i] == std::get<0>(last_function))
-                    ;
-                else
-                    pending_brackets.push(brackets_positions[i]); //We push it into a stack
+                pending_brackets.push(brackets_positions[i]); //We push it into a stack
             } //The logic might seem counter-intuitive at first glance, keep in mind we are iterating backwards
             else{
                 arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
@@ -413,7 +410,7 @@ void derivative::find_scopes(){
                 arguments_range.clear(); //We clear for the next value to be stored
             }
         }
-        else if(!_index_to_bracketsm[brackets_positions[i + 1]] or brackets_positions[i] == std::get<0>(last_function)){ //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
+        else if(!_index_to_bracketsm[brackets_positions[i + 1]]){ //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
             ; //We ignore it, this way we make sure that when the next condition is met there will be a '(' to ')' relationship //sin(2x) - tan(2x - ln(x))
         }
         else { //If our current bracket is a starting bracket '(' i.e if we have '()'
