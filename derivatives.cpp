@@ -20,10 +20,13 @@ class derivative{
 
     private:
 
+        std::btree_pair<std::string, std::tuple<std::string derivative, std::string, char, int>> _parsed_functionp;
+        std::btree_map<std::string, std::tuple<std::string derivative, std::string, char, int>> _parsed_function;
+        bool store_in_btree;
         std::string _expression;
+        int _depth;
         std::deque<std::tuple<int, int>> _function_ranges;
         std::deque<std::vector<int>> _polynomial_brackets;
-        std::vector<std::tuple<int, int>> _parsed_function;
         std::vector<std::string> _expressionarr;
         std::vector<char> _symbols_stored;
         std::vector<int> _polynomial_starting_brackets; //We will use it for the computer to distinguish between polynomial and function brackets
@@ -56,6 +59,8 @@ class derivative{
             std::vector<int> product_indices; //Note: indices are defined with respect to the polynomial itself rather than the general expression
             std::vector<int> quotient_indices;
             std::vector<int> indices;
+            std::vector<int> brackets_indices;
+            std::stack<std::tuple<int, int>> pending_expressionb;
             bool product_rule = false;
             bool quotient_rule = false;
             bool previous_polynomial = false; //We will only need this boolean for this specific case ln(3x - 4 * sin(x)) i.e polynomials before functions inside functions
@@ -64,6 +69,7 @@ class derivative{
             std::string function_in_front;
             std::string polynomial;
         };
+        Polynomial polynomial;
         bool _repeated_values = false;
 
     public:
@@ -84,7 +90,8 @@ class derivative{
         std::vector<int> brackets_bag();
         void function_parser();
         std::tuple<bool, std::string> differentiate_previous_polynomials(int &index, std::string &function);
-        std::string differentiate_polynomial(Polynomial &polynomial);
+        std::string differentiate_polynomial();
+        std::string differentiate_exponentm(std::string &monomial); //It will differentiate a monomial with an exponent
         std::string differentiate_function(std::string &function);
         std::tuple<std::string, int, char> fill_function_details(std::tuple<std::string, int, char> function_details, int &S1);
         void find_scopes();
@@ -104,7 +111,7 @@ class derivative{
         void test3();
         void test4();
         void fill_derivatives();
-        derivative(std::string expression); //Copy constructor
+        derivative(std::string expression, bool expressions_in); //Copy constructor
         derivative(derivative&&) = default; //Move constructor
         derivative& operator = (const derivative&) & = default; //Move constructor
         derivative& operator = (derivative&&) & = default; //Copy assignment operator
@@ -448,7 +455,7 @@ void derivative::find_scopes(){
                 pending_brackets.push(brackets_positions[i]); //We push it into a stack
             } //The logic might seem counter-intuitive at first glance, keep in mind we are iterating backwards
             else {
-                auto ispbracket = std::find(_polynomial_starting_brackets.begin(), _polynomial_starting_brackets.end(), brackets_positions[i - 1]);
+                auto ispbracket = std::find(_polynomial_starting_brackets.begin(), _polynomial_starting_brackets.end(), brackets_positions[i - 1]); //If it is bracket to a polynomial
                 if(ispbracket != _polynomial_starting_brackets.end()){
                     pbrackets.push_back(brackets_positions[i - 1]);
                     pbrackets.push_back(brackets_positions[i]);
@@ -738,14 +745,15 @@ bool derivative::isCoefficient(int &index) {
 }
 
 std::tuple<bool, std::string> derivative::differentiate_previous_polynomials(int &index, std::string &function){ //We insert the index to the arithmetic symbol from the function tuple contained in range to functions
-    Polynomial polynomial;
     polynomial.function_in_front = function;
     std::string derivative;
     bool polynomials_before = false;
-    while(isPolynomic(index) or isCoefficient(index) or (_expression[index] != ')'  and isFunction(_expressionarr[index - 1]))){
+    while(isPolynomic(index) or isCoefficient(index) or (_expression[index] != ')'  and !isFunction(_expressionarr[index - 1]))){ //TODO this must be changed if we process ^ as a function!!!!!!
         polynomial.previous_polynomial = true; //Note: If previous polynomial is true, the first index won't be a symbol!
         polynomials_before = true;
         polynomial.indices.push_back(index);
+        if(_expressionarr[index] == '(' or _expressionarr[index] == ')')
+            polynomial.brackets_indices.push_back(index);
         if (isProduct(index)) {
             index -= 1;
             if(!polynomial.product_rule) {
@@ -760,14 +768,21 @@ std::tuple<bool, std::string> derivative::differentiate_previous_polynomials(int
                 polynomial.product_indices.push_back(index);
             } else
                 ;
+        } else {
+            index -= 1;
         }
     }
-    derivative = differentiate_polynomial(polynomial);
+    derivative = differentiate_polynomial();
     return std::make_tuple(polynomials_before, derivative); //Change that for the derivative!
 }
 
+std::string derivative::differentiate_exponentm(std::string &monomial) {
+    ;
+}
 
-std::string derivative::differentiate_polynomial(Polynomial &polynomial) {
+
+
+std::string derivative::differentiate_polynomial() {
     std::string derivative;
     std::string between_brackets;
     std::tuple<int, int> bracket_pivot;
@@ -778,22 +793,7 @@ std::string derivative::differentiate_polynomial(Polynomial &polynomial) {
     for(int index : polynomial.indices){
         polynomial.polynomial += _expressionarr[index]; //We fill the polynomial variable with a string
     }
-    while(_polynomial_brackets.front()[0] > polynomial.indices.back() and _polynomial_brackets.front()[1] < polynomial.indices.front()){ //We process elements from queue and pop them
-        brackets = true; //If loop is initialised there is one or more brackets contained in the expressions
-        bracket_sequence.push_back(std::make_tuple(_polynomial_brackets.front()[0], _polynomial_brackets.front()[1]));
-        _polynomial_brackets.pop_front(); //A queue will help with this, just because of the order of appereance fashion in which we process it
-        //We know that as long as we pop the last element whenever the differentiate method is called the next brackets to be popped will be correct
-    }
-    if(brackets){
-        for(auto &brackets : bracket_sequence){
-            bracket_pivot = brackets;
-            between_brackets.assign(_expressionarr[std::get<0>(bracket_pivot)], _expressionarr[std::get<1>(bracket_pivot)]);
-            //Write method to differentiate polynomial
-            //The function needs to take into account signs pre and post brackets and if brackets are raised to some power
-        }
-    } else{
-        //Write method to differentiate polynomial
-    }
+    
     return derivative;
 }
 
@@ -885,6 +885,13 @@ bool derivative::isFunction(std::string &pfunction) {
     auto isFunction = std::find(_func.begin(), _func.end(), pfunction);
     return isFunction != _func.end();
 }
+
+class Functionparser{
+
+    private:
+
+
+};
 
 
 void autocalculus(){
