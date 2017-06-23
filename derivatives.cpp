@@ -680,7 +680,7 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
         if(!root_to_inside.empty()) { //If functions inside previous functios had in turn more functions inside
             for (iterator it = root_to_inside.begin(); it != root_to_inside.end(); it++) { //If the function had functions inside and was already found
                 if(it->first == pivot) //If pivot happens to be one of those functions
-                    pivot = it->second.back(); //We set the pivot to our stored value
+                    pivot = it->second.pop_front(); //We set the pivot to our stored value
                 else
                     continue;
             }
