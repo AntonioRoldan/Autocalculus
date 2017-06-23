@@ -652,15 +652,15 @@ void derivative::function_parser(){
 
 //Welcome to hell...
 std::string derivative::differentiate() { //TODO The order of the output will have to be defined in terms of the chain rule between adjacent functions, "next", SE_to_OD and parsed gx will help us with that
-    typedef std::map<std::tuple<int, int>, std::deque<std::tuple<int, int>>>::const_iterator iterator;
+    typedef std::map<std::tuple<int, int>, std::deque<std::tuple<int, int>>>::const_iterator iterator; //TODO Create a polynomial to derivative map and a vector of sorted tuples to process g(x)
     bool chain_rule;
     int count = 0;
     int offset = 0;
     int SB; //Starting brackets
     int EB; //Ending brackets
     std::vector<std::tuple<std::tuple<int, int>, std::string>> parsed_gx; //Vector contains tuples of a tuple containing starting and ending brackets of function or polynomial and a string representing its derivative
-    std::pair<std::tuple<int, int>, std::string> brackets_to_derivativep;
-    std::map<std::tuple<int, int>, std::string> brackets_to_derivative; //It maps the function brackets to its derivative it will be cleared after they are processed!!! we will need it for the chain rule
+    std::pair<std::tuple<int, int>, std::string> function_to_derivativep;
+    std::map<std::tuple<int, int>, std::string> function_to_derivative; //It maps the function brackets to its derivative it will be cleared after they are processed!!! we will need it for the chain rule
     std::pair<std::tuple<int, int>, std::deque<std::tuple<int, int>>> root_to_insidep;
     std::map<std::tuple<int, int>, std::deque<std::tuple<int, int>>> root_to_inside;
     std::deque<std::tuple<int, int>> functions_buffer; //The main container where functions inside functions are sequencially processed
@@ -680,7 +680,7 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
         if(!root_to_inside.empty()) { //If functions inside previous functios had in turn more functions inside
             for (iterator it = root_to_inside.begin(); it != root_to_inside.end(); it++) { //If the function had functions inside and was already found
                 if(it->first == pivot) //If pivot happens to be one of those functions
-                    pivot = it->first; //We set the pivot to our stored value
+                    pivot = it->second.back(); //We set the pivot to our stored value
                 else
                     continue;
             }
@@ -721,9 +721,10 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
         }
         if(chain_rule and !functions_buffer.empty()){//the expression g(x) in f(g(x)) is being processed
             count += 1;
-            brackets_to_derivativep.first = pivot;
-            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
-            brackets_to_derivative.insert(brackets_to_derivativep);//we calculate derivative
+            function_to_derivativep.first = pivot;
+            function_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            function_to_derivative.insert(function_to_derivativep);//we calculate derivative
+            parse_polynomial(SB, EB, false); //We are not at the beginning of the function scope therefore the parsing function will check for this case ln(3x - sin(x)[ + 2x - tan(x) + 4x ]- cos(x))
             functions_buffer.pop_front();
             if(count == offset) //g(x) has already been processed
                 count = 0; //We reset everything for the next queue containing functions inside functions to be processed
@@ -732,19 +733,21 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
         }
         else if(chain_rule){//Else we have a function with a single polynomial inside it which also happens to be inside a function
             count += 1;
-            brackets_to_derivativep.first = pivot;
-            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
-            brackets_to_derivative.insert(brackets_to_derivativep);
+            function_to_derivativep.first = pivot;
+            function_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            function_to_derivative.insert(function_to_derivativep);
+            parse_polynomial(SB, EB, false);
             functions_buffer.pop_front();
             if(count == offset) //g(x) has already been processed
                 count = 0; //We reset everything for the next queue containing functions inside functions to be processed
                 offset = 0;
+                function_to_derivative.clear();
                 functions_buffer.clear();
         }
         else{ //Else we have a function with a single polynomial inside it, which doesn't happen to be contained in any function (Jesus, what a relief...)
-            brackets_to_derivativep.first = pivot;
-            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
-            brackets_to_derivative.insert(brackets_to_derivativep);
+            function_to_derivativep.first = pivot;
+            function_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            function_to_derivative.insert(function_to_derivativep);
             functions_buffer.pop_front();
         }
     }
@@ -759,7 +762,7 @@ derivative::~derivative(){
 
 }
 
-void derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) {
+void derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) { //TODO If there is a sign behind it doesn't guarantee that there is a polynomial behind it !! Change indices in conditions
     bool polynomial_exists = true;
     polynomial.front_function = std::make_tuple(sindex, eindex);
     int cur = sindex; //We will use the starting brackets of the function as the starting point
@@ -805,7 +808,7 @@ void derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) 
     }
     else if(polynomial.next_polynomial and polynomial.previous_polynomial){ //Expressions to be parsed : first : polynomial symbol, second : symbol polynomial symbol or symbol polynomial brackets
         polynomial.polynomial_symbol = true;
-        if(outerfunction) polynomial.polynomial_symbol = true; else polynomial.symbol_polynomial_symbol = true; //If outer function in this case we have ln(2x + sin(x) - 3x...?) else ln(tan(x)[ + 3x + sin(x) - 2x + ]cos(x))
+        if(outerfunction) polynomial.polynomial_symbol = true; else polynomial.symbol_polynomial_symbol = true; //If outer function in this case we have ln(2x + sin(x) - 3x...?) else ln(tan(x)[ + 3x + sin(x) - 2x + ]cos(x)) //TODO In the second case we might be at the end of a succesion and not know it
         cur = eindex; //Note : Here ...? means possible sequence
         while (!isFunction(_expressionarr[cur])) { //We iterate from the starting brackets to that function
             switch(_expressionarr[cur][0]){
