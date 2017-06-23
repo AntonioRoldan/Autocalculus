@@ -716,8 +716,8 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
                     parse_polynomial(SB, EB, true); //The program will expect the first polynomial to be between the starting brackets of the function and the next function of the queue
                 else
                     parse_polynomial(SB, EB, false);
+                offset = (int) functions_buffer.size();
             }
-            offset = (int) functions_buffer.size();
         }
         if(chain_rule and !functions_buffer.empty()){//the expression g(x) in f(g(x)) is being processed
             count += 1;
@@ -730,7 +730,18 @@ std::string derivative::differentiate() { //TODO The order of the output will ha
                 offset = 0;
                 functions_buffer.clear();
         }
-        else{//Else we have a function with a single polynomial inside it (Jesus, what a relief...)
+        else if(chain_rule){//Else we have a function with a single polynomial inside it which also happens to be inside a function
+            count += 1;
+            brackets_to_derivativep.first = pivot;
+            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            brackets_to_derivative.insert(brackets_to_derivativep);
+            functions_buffer.pop_front();
+            if(count == offset) //g(x) has already been processed
+                count = 0; //We reset everything for the next queue containing functions inside functions to be processed
+                offset = 0;
+                functions_buffer.clear();
+        }
+        else{ //Else we have a function with a single polynomial inside it, which doesn't happen to be contained in any function (Jesus, what a relief...)
             brackets_to_derivativep.first = pivot;
             brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
             brackets_to_derivative.insert(brackets_to_derivativep);
