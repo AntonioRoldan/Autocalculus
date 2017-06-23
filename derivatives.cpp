@@ -20,16 +20,10 @@ class derivative{
 
     private:
 
-        std::btree_pair<std::string, std::tuple<std::string derivative, std::string, char, int>> _parsed_functionp;
-        std::btree_map<std::string, std::tuple<std::string derivative, std::string, char, int>> _parsed_function;
-        bool store_in_btree;
         std::string _expression;
-        int _depth;
         std::deque<std::tuple<int, int>> _function_ranges;
-        std::deque<std::vector<int>> _polynomial_brackets;
         std::vector<std::string> _expressionarr;
         std::vector<char> _symbols_stored;
-        std::vector<int> _polynomial_starting_brackets; //We will use it for the computer to distinguish between polynomial and function brackets
         bool _use_multimap = false;
         std::vector<std::string> _functions;
         std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z'};
@@ -43,34 +37,32 @@ class derivative{
         std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
         std::map<char,std::vector<int>> _symbols_classificationm;
         std::pair<int , char> _index_to_symbolsp;
-        std::pair<std::string, std::string> _function_to_derivativep;
-        std::map<std::string, std::string> _function_to_derivative;
         std::map<int, char> _index_to_symbolsm;
         std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
         std::map<int, std::string> _index_to_functionm;
         std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-        std::pair<std::tuple<int, int>, std::tuple<std::string, int, char>> _range_to_functionp; //Keys: function's range Values: function type, previous sign, exponentiation and depth
-        std::multimap<std::tuple<int,int>, std::tuple<std::string, int, char>> _range_to_functionm;
+        std::pair<std::tuple<int, int>, std::tuple<std::string, int, char,int>> _range_to_functionp; //Keys: function's range Values: function type, previous sign, exponentiation and depth
+        std::multimap<std::tuple<int,int>, std::tuple<std::string, int, char, int>> _range_to_functionm;
         std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
         std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
         std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
         std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
+        bool _repeated_values = false;
         struct Polynomial{
             std::vector<int> product_indices; //Note: indices are defined with respect to the polynomial itself rather than the general expression
             std::vector<int> quotient_indices;
             std::vector<int> indices;
-            std::vector<int> brackets_indices;
-            std::stack<std::tuple<int, int>> pending_expressionb;
-            bool product_rule = false;
-            bool quotient_rule = false;
+            std::vector<std::tuple<std::string, std::string>> polynomial_derivative_pairs;
+            bool symbol_polynomial_brackets; //Only polynomial lying after the function
+            bool symbol_polynomial_symbol; //Polynomial lying between two functions
+            bool polynomial_symbol;
             bool previous_polynomial = false; //We will only need this boolean for this specific case ln(3x - 4 * sin(x)) i.e polynomials before functions inside functions
             bool next_polynomial = false; //We will use this by default in the vase majority of the cases
             bool single_polynomial = false; //Refers to when there is a single polynomial as the argument of a function
-            std::string function_in_front;
+            std::tuple<int, int> front_function;
             std::string polynomial;
         };
         Polynomial polynomial;
-        bool _repeated_values = false;
 
     public:
 
@@ -83,35 +75,25 @@ class derivative{
         void insert_index_to_function();
         void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
         void insert_function_to_inside(std::tuple<int, int> function, std::vector<std::tuple<int, int>> functions_inside);
-        void insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char> function);
+        void insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char, int> function);
         void insert_symbol(char &symbol, int &index);
         void fill_function_ranges();
         std::string give_function(int &index);
         std::vector<int> brackets_bag();
-        void function_parser();
-        std::tuple<bool, std::string> differentiate_previous_polynomials(int &index, std::string &function);
-        std::string differentiate_polynomial();
-        std::string differentiate_exponentm(std::string &monomial); //It will differentiate a monomial with an exponent
-        std::string differentiate_function(std::string &function);
-        std::tuple<std::string, int, char> fill_function_details(std::tuple<std::string, int, char> function_details, int &S1);
         void find_scopes();
         void find_functions_inside();
-        void fill_range_to_function(std::tuple<int, int> &pivot);
         void fill_function_to_inside(std::tuple<int, int> &pivot);
-        bool isAddition(int &index);
-        bool isSubtraction(int &index);
-        bool isProduct(int &index);
-        bool isQuotient(int &index);
-        bool isPolynomic(int &index);
-        bool isCoefficient(int &index);
+        std::tuple<std::string, std::string> parse_polynomial(int &sindex, int &eindex, bool outerfunction);
+        std::string differentiate_polynomial();
+        std::string differentiate();
+        std::string differentiate_function(std::string function);
         bool isFunction(std::string &pfunction);
-        std::string differentiate(int &index, bool &product_rule, bool &quotient_rule);
+        std::tuple<std::string, int, char> fill_function_details(std::tuple<std::string, int, char> function_details, int &S1);
+        void function_parser();
         void test1();
         void test2();
         void test3();
-        void test4();
-        void fill_derivatives();
-        derivative(std::string expression, bool expressions_in); //Copy constructor
+        derivative(std::string expression); //Copy constructor
         derivative(derivative&&) = default; //Move constructor
         derivative& operator = (const derivative&) & = default; //Move constructor
         derivative& operator = (derivative&&) & = default; //Copy assignment operator
@@ -120,14 +102,11 @@ class derivative{
 
 void derivative::detect_functions(){ //Refactoring needed
     int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
-    int index;
     bool done = false;
     bool previous_number;
     std::string number;
     std::string function;
-    int coefficient;
     while(!done){
-        int count = 0;
         for(int i = 0; i < _expression.size(); i++){
 
             switch(_expression[i]){
@@ -176,18 +155,18 @@ void derivative::detect_functions(){ //Refactoring needed
                     break;
 
                 case 'c' :  if(_expression[i + 1] == 'o'){
-                                if(_expression[i - 2] == 'a')
-                                    ;
-                                else if(_expression[i + 3] == 'e'){
-                                    function = "cosec";
-                                    _expressionarr.push_back(function);
-                                    cosec++;
-                                }
-                                else if(_expression[i + 2] == 's'){
-                                    function = "cos";
-                                    _expressionarr.push_back(function);
-                                    cos++;
-                                }
+                        if(_expression[i - 2] == 'a')
+                            ;
+                        else if(_expression[i + 3] == 'e'){
+                            function = "cosec";
+                            _expressionarr.push_back(function);
+                            cosec++;
+                        }
+                        else if(_expression[i + 2] == 's'){
+                            function = "cos";
+                            _expressionarr.push_back(function);
+                            cos++;
+                        }
                     }
                     else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
                         ;
@@ -271,33 +250,12 @@ void derivative::detect_functions(){ //Refactoring needed
             _index_to_bracketsm.clear();
             _symbols_classificationm.clear();
         }
-        insert_index_to_function();
-        insert_index_to_symbols();
     }
-    fill_derivatives();
+    insert_index_to_function();
+    insert_index_to_symbols();
 }
 
-void derivative::fill_derivatives() {
-    _function_to_derivativep.first = "ln";
-    _function_to_derivativep.second = "1/]";
-    _function_to_derivativep.first = "log";
-    _function_to_derivativep.second = "1/]ln2";
-    _function_to_derivativep.first = "sin";
-    _function_to_derivativep.second = "cos]";
-    _function_to_derivativep.first = "cos";
-    _function_to_derivativep.second = "-sin]";
-    _function_to_derivativep.first = "tan";
-    _function_to_derivativep.second = "sec^2]";
-    _function_to_derivativep.first = "sec";
-    _function_to_derivativep.second = "sec]*tan]";
-    _function_to_derivativep.first = "cosec";
-    _function_to_derivativep.second = "-cosec]*cotan]";
-    _function_to_derivativep.first = "cotan";
-    _function_to_derivativep.second = "-cosec^2]";
-    _function_to_derivativep.first = "e";
-    _function_to_derivativep.second = "e]";
-    _function_to_derivative.insert(_function_to_derivativep);
-}
+
 
 bool derivative::isNumber(char &number) {
     auto pos = std::find(_numbers.begin(), _numbers.end(), number);
@@ -315,14 +273,13 @@ void derivative::insert_index_to_function(){
         if(isfunction != _func.end()){
             _index_to_functionp.first = i;
             _index_to_functionp.second = _expressionarr[i];
-            _index_to_functionm.insert(_index_to_functionp);
+            if(!_repeated_values)
+                _index_to_functionm.insert(_index_to_functionp);
+            else
+                _index_to_functionmr.insert(_index_to_functionp);
         }
         else
             continue;
-    }
-    typedef std::map<int, std::string>::const_iterator iterator;
-    for(iterator it = _index_to_functionm.begin(); it != _index_to_functionm.end(); it++){
-        std::cout<<"index: " << it->first << "\t" << "function: " << it->second<<std::endl;
     }
 }
 
@@ -383,14 +340,25 @@ std::string derivative::give_function(int &index){
     std::vector<int> distances;
     int distance;
     std::size_t at;
-   //If there are no repeated values we iterate through a map
-    typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _index_to_function map (see above)
-    for( indices iter = _index_to_functionm.begin(); iter != _index_to_functionm.end(); iter++){
-        distance = index - iter->first;
-        if(distance > 0)
-            distances.push_back(distance);
-        else
-            continue;
+    if(!_repeated_values){ //If there are no repeated values we iterate through a map
+        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _index_to_function map (see above)
+        for( indices iter = _index_to_functionm.begin(); iter != _index_to_functionm.end(); iter++){
+            distance = index - iter->first;
+            if(distance > 0)
+                distances.push_back(distance);
+            else
+                continue;
+        }
+    }
+    else{ //Else we iterate through a multimap
+        typedef std::multimap<int, std::string>::const_iterator indicesr;
+        for(indicesr iter = _index_to_functionmr.begin(); iter != _index_to_functionmr.end(); iter++){
+            distance = index - iter->first; //We calculate distance
+            if(distance > 0) //Filter out negative values
+                distances.push_back(distance); //and store the results in a vector
+            else
+                continue;
+        }
     }
     auto min = std::min_element(std::begin(distances), std::end(distances));
     at = std::distance(distances.begin(), min);
@@ -406,17 +374,15 @@ std::vector<int> derivative::brackets_bag(){
     std::vector<std::vector<std::size_t>> positions;
     boost::iterator_range<std::string::iterator> pos;
     std::size_t bracket_index;
+    int occurrencesb = 0; //Starting brackets occurences
+    int occurrenceb = 0; //Ending brackets occurences
     for(int i = 0; i < _expressionarr.size(); i++){
         if(_expressionarr[i] == "(") {
-            auto functionFound = std::find(_func.begin(), _func.end(), _expressionarr[i - 1]); //We must ignore brackets of polynomials
-            if(functionFound != _func.end()){
-                _polynomial_starting_brackets.push_back(i);
-            } else{
-                brackets_positions.push_back(i);
-                _index_to_bracketsp.first = i;
-                _index_to_bracketsp.second = true; //true stands for '('
-                _index_to_bracketsm.insert(_index_to_bracketsp);
-            }
+            brackets_positions.push_back(i); //We need to cast a size_t value to int
+            _index_to_bracketsp.first = i;
+            _index_to_bracketsp.second = true; //true stands for '('
+            _index_to_bracketsm.insert(_index_to_bracketsp);
+            occurrencesb++;
         }
         else if(_expressionarr[i] == ")")  {
             brackets_positions.push_back(i);
@@ -428,7 +394,7 @@ std::vector<int> derivative::brackets_bag(){
     return brackets_positions;
 }
 
-void derivative::test4(){
+void derivative::test3(){
     typedef std::multimap<std::string, std::vector<int>>::const_iterator MapIterator;
     for(MapIterator iter = _function_to_rangemr.begin(); iter != _function_to_rangemr.end(); iter++){
         std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
@@ -439,6 +405,25 @@ void derivative::test4(){
     }
 }
 
+
+void derivative::test2(){
+    typedef std::multimap<std::tuple<int, int>, std::tuple<int, int>>::const_iterator Iterator;
+    for(Iterator iter = _SE_to_OD.begin(); iter != _SE_to_OD.end(); iter++){
+        std::cout<<"SE: "<< std::get<0>(iter->first) << "\t" << std::get<1>(iter->first) << "\nOD: " << std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << std::endl;
+    }
+}
+
+void derivative::test1(){
+    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
+    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Inside: ";
+        for(const auto &i : iter->second){
+            std::cout<<std::get<0>(i) << "\t" << std::get<1>(i) << "\n" << std::endl;
+        }
+    }
+}
+
+
 void derivative::find_scopes(){
     //It stores each function along with its argument range, defined by the brackets position in a map
     detect_functions();
@@ -446,61 +431,40 @@ void derivative::find_scopes(){
     std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
     int single_bracket; //A bracket looking for a partner
     std::vector<int> arguments_range; //It will serve as a temporary container to store values in a hash table
-    std::vector<std::tuple<int, int>> perfect_matches;
-    std::tuple<int, int> last_function;
-    std::vector<int> pbrackets;
-    for( unsigned i = (int) brackets_positions.size(); i-- > 0;) {
-        if (!_index_to_bracketsm[brackets_positions[i]]) { //If brackets are ending brackets ')'
-            if (!_index_to_bracketsm[brackets_positions[i - 1]]) { //If its previous brackets are also ending brackets
+    for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
+        if(!_index_to_bracketsm[brackets_positions[i]]){ //If brackets are ending brackets ')'
+            if(!_index_to_bracketsm[brackets_positions[i - 1]]){ //If its previous brackets are also ending brackets
                 pending_brackets.push(brackets_positions[i]); //We push it into a stack
             } //The logic might seem counter-intuitive at first glance, keep in mind we are iterating backwards
-            else {
-                auto ispbracket = std::find(_polynomial_starting_brackets.begin(), _polynomial_starting_brackets.end(), brackets_positions[i - 1]); //If it is bracket to a polynomial
-                if(ispbracket != _polynomial_starting_brackets.end()){
-                    pbrackets.push_back(brackets_positions[i - 1]);
-                    pbrackets.push_back(brackets_positions[i]);
-                    _polynomial_brackets.push_back(pbrackets);
-                }
-                else{
-                    arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
-                    arguments_range.push_back(brackets_positions[i - 1]); //We push the position for starting brackets
-                    _function_to_rangep.first = give_function(
-                            brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
-                    _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
-                    if (!_repeated_values) //We store in a map
-                        _function_to_rangem.insert(_function_to_rangep);
-                    else //We store in a multimap
-                        _function_to_rangemr.insert(_function_to_rangep);
-                    arguments_range.clear(); //We clear for the next value to be stored
-                }
-            }
-        } else if (!_index_to_bracketsm[brackets_positions[i + 1]]) { //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
-            ; //We ignore it, this way we make sure that when the next condition is met there will be a '(' to ')' relationship //sin(2x) - tan(2x - ln(x))
-        } else { //If our current bracket is a starting bracket '(' i.e if we have '()'
-            auto ispbracket = std::find(_polynomial_starting_brackets.begin(), _polynomial_starting_brackets.end(), brackets_positions[i]); //If it is a polynomial bracket
-            single_bracket = pending_brackets.top(); //We get our previously stored value from the stack
-            if(ispbracket != _polynomial_starting_brackets.end()){
-                pbrackets.push_back(brackets_positions[i]);
-                pbrackets.push_back(single_bracket);
-                _polynomial_brackets.push_back(pbrackets);
-            }
-            else {
-                arguments_range.push_back(single_bracket); //We push the position for ending brackets
-                arguments_range.push_back(brackets_positions[i]); //We push the position for starting brackets
-                pending_brackets.pop(); //And free our friend from the stack
-                _function_to_rangep.first = give_function(
-                        brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
+            else{
+                arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
+                arguments_range.push_back(brackets_positions[i - 1]); //We push the position for starting brackets
+                _function_to_rangep.first = give_function(brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
                 _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
-                if (!_repeated_values) //We store in a map
+                if(!_repeated_values) //We store in a map
                     _function_to_rangem.insert(_function_to_rangep);
                 else //We store in a multimap
                     _function_to_rangemr.insert(_function_to_rangep);
-                arguments_range.clear();
+                arguments_range.clear(); //We clear for the next value to be stored
             }
-            pending_brackets.pop();
+        }
+        else if(!_index_to_bracketsm[brackets_positions[i + 1]]){ //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
+            ; //We ignore it, this way we make sure that when the next condition is met there will be a '(' to ')' relationship
+        }
+        else { //If our current bracket is a starting bracket '(' i.e if we have '()'
+            single_bracket = pending_brackets.top(); //We get our previously stored value from the stack
+            arguments_range.push_back(single_bracket); //We push the position for ending brackets
+            arguments_range.push_back(brackets_positions[i]); //We push the position for starting brackets
+            pending_brackets.pop(); //And free our friend from the stack
+            _function_to_rangep.first = give_function(single_bracket); //Values for ending and starting brackets are swapped when being stored
+            _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
+            if (!_repeated_values) //We store in a map
+                _function_to_rangem.insert(_function_to_rangep);
+            else //We store in a multimap
+                _function_to_rangemr.insert(_function_to_rangep);
+            arguments_range.clear();
         }
     }
-    test4();
 }
 
 
@@ -516,12 +480,11 @@ void derivative::insert_function_to_inside(std::tuple<int, int> function, std::v
     _function_to_inside_functionm.insert(_function_to_inside_functionp);
 }
 
-void derivative::insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char> function){
+void derivative::insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char, int> function){
     _range_to_functionp.first = range;
     _range_to_functionp.second = function;
     _range_to_functionm.insert(_range_to_functionp);
 }
-
 
 void derivative::fill_function_ranges() {
     std::vector<int> indices_buffer;
@@ -559,247 +522,22 @@ void derivative::fill_function_ranges() {
     }
 }
 
-void derivative::fill_range_to_function(std::tuple<int, int> &pivot) {
-    int S1 = std::get<0>(pivot);
-    auto found = std::find(_func.begin(), _func.end(), _expressionarr[S1 - 2]);
-    int symbol;
-    char exponent;
-    std::tuple<std::string, int, char, int> function;
-    if(S1 - 2 != '('){
-        if(found != _func.end()){ //If the cursor lies on a function, it means it is raised to some power
-            if(S1 - 3 != '('){ //And so we check the previous index
-                symbol = S1 - 3;
-            }
-            else
-                symbol = 666; //It doesn't have any previous symbol
-        }else{
-            symbol = S1 - 2;
-        }
-    }else{
-        symbol = 666;
-    }
-    auto found2 = std::find(_func.begin(), _func.end(), _expressionarr[S1 - 1]);
-    if(found2 != _func.end())
-        exponent = 'v';
-    else
-        exponent = '^';
-    insert_range_to_function(pivot, std::make_tuple(give_function(S1), symbol, exponent));
-}
-
-void derivative::fill_function_to_inside(std::tuple<int, int> &pivot){
-    int S1 = std::get<0>(pivot);
-    int E1 = std::get<1>(pivot);
-    int S2;
-    int E2;
-    std::vector<std::tuple<int, int>> functions_inside;
-    bool inside = false;
-    for (auto &i : _function_ranges){
-        S2 = std::get<0>(i);
-        E2 = std::get<1>(i);
-        if(S1 < S2 and E1 > E2){
-            inside = true;
-            functions_inside.push_back(std::make_tuple(S2, E2));
-        }
-        else
-            continue;
-    }
-    if(!inside)
-        functions_inside.push_back(pivot);
-    else
-        ;
-    insert_function_to_inside(pivot, functions_inside);
-}
-
-void derivative::find_functions_inside(){
-    bool inside;
-    int depth;
-    int order;
-    std::vector<std::tuple<int, int>> order_depth;
-    std::tuple<int, int> pivot;
-    while(!_function_ranges.empty()) {
-        inside = false;
-        depth = 0;
-        order = 0;
-        pivot = _function_ranges.front();
-        _function_ranges.pop_front();
-        if (!_function_to_inside_functionm.empty()) {
-            typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator MapIterator; //We calculate the depth by checking if the function exists in other functions
-            for (MapIterator iter = _function_to_inside_functionm.begin();
-                 iter != _function_to_inside_functionm.end(); iter++) {
-                auto found = std::find(iter->second.begin(), iter->second.end(), pivot);
-                if (found != iter->second.end()) {
-                    inside = true;
-                    depth += 1;
-                } else
-                    continue;
-            }
-            if (!inside) { //If function is not inside any function we have depth 0
-                //If it is level 0 we can check its order without caring about other functions being stored previously
-                for (int i = 0; i < order_depth.size(); i++) {
-                    if (std::get<0>(order_depth[i]) == 0)
-                        order = std::get<1>(order_depth[i]) + 1;
-                    else
-                        continue;
-                }
-                order_depth.push_back(std::make_tuple(depth, order));
-                insert_SE_OD(pivot, std::make_tuple(depth, order));
-            } else { //If it is not inside, the order_depth vector has already been filled
-                for (unsigned i = (int) order_depth.size(); i-- > 0;) { //We make sure that the new tuple is stored with the right order value, comparing with previously stored tuples
-                    if (std::get<0>(order_depth[i]) > depth) {
-                        continue;
-                    } else if (std::get<0>(order_depth[i]) < depth) { //If previous value has lower depth, our new order value will always be 1
-                        order = 1;
-                        order_depth.push_back(std::make_tuple(depth, order));
-                        insert_SE_OD(pivot, std::make_tuple(depth, order));
-                        break;
-                    } else {
-                        order = std::get<1>(order_depth[i]) + 1;
-                        order_depth.push_back(std::make_tuple(depth, order));
-                        insert_SE_OD(pivot, std::make_tuple(depth, order));
-                        break;
-                    }
-                }
-            }
-        } else {
-            order = 1;
-            order_depth.push_back(std::make_tuple(depth, order));
-            insert_SE_OD(pivot, std::make_tuple(depth, order));
-        }
-        fill_range_to_function(pivot);
-        fill_function_to_inside(pivot);
-    }
-}
-
-
-void derivative::test3(){
-    typedef std::multimap<std::tuple<int, int>, std::tuple<int, int>>::const_iterator Iterator;
-    for(Iterator iter = _SE_to_OD.begin(); iter != _SE_to_OD.end(); iter++){
-        std::cout<<"SE: "<< std::get<0>(iter->first) << "\t" << std::get<1>(iter->first) << "\nOD: " << std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << std::endl;
-    }
-}
-
-
-void derivative::function_parser(){
-    std::vector<std::tuple<int, int>> order_depth;
-    std::tuple<int, int> pivot;
-    fill_function_ranges();
-    find_functions_inside();
-    test1();
-    test2();
-    test3();
-}
-
-void derivative::test1(){
-    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
-    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Inside: ";
-        for(const auto &i : iter->second){
-            std::cout<<std::get<0>(i) << "\t" << std::get<1>(i) << "\n" << std::endl;
-        }
-    }
-}
-
-void derivative::test2(){
-    typedef std::map<std::tuple<int,int>, std::tuple<std::string, int, char>>::const_iterator Iterator;
-    for(Iterator iter = _range_to_functionm.begin(); iter != _range_to_functionm.end(); iter++){
-        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Function: \n";
-        std::cout<< std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << "\t" << std::get<2>(iter->second)
-                 <<"\t" << std::get<3>(iter->second) << "\n\n"<<std::endl;
-    }
-}
-
-bool derivative::isAddition(int &index) {
-    auto isAddition = std::find(_symbols_classificationm['+'].begin(), _symbols_classificationm['+'].end(), _expressionarr[index]);
-    return isAddition != _symbols_classificationm['+'].end();
-}
-
-bool derivative::isSubtraction(int &index) {
-    auto isSubtraction = std::find(_symbols_classificationm['-'].begin(), _symbols_classificationm['-'].end(), _expressionarr[index]);
-    return isSubtraction != _symbols_classificationm['-'].end();
-}
-
-bool derivative::isProduct(int &index) {
-    auto isProduct = std::find(_symbols_classificationm['*'].begin(), _symbols_classificationm['*'].end(), _expressionarr[index]);
-    return isProduct != _symbols_classificationm['*'].end();
-}
-
-bool derivative::isQuotient(int &index) {
-    auto isQuotient = std::find(_symbols_classificationm['/'].begin(), _symbols_classificationm['/'].end(), _expressionarr[index]);
-    return isQuotient != _symbols_classificationm['/'].end();
-}
-
-bool derivative::isPolynomic(int &index) {
-    char variable = _expressionarr[index].back();
-    return variable == 'x' or variable == 'y' or variable == 'z';
-
-}
-
-bool derivative::isCoefficient(int &index) {
-    for(char number : _expressionarr[index]){
-        if(number == 'x' or number == 'y' or number == 'z')
-            return false;
-        else
-            continue;
-    }
-    return true;
-}
-
-std::tuple<bool, std::string> derivative::differentiate_previous_polynomials(int &index, std::string &function){ //We insert the index to the arithmetic symbol from the function tuple contained in range to functions
-    polynomial.function_in_front = function;
-    std::string derivative;
-    bool polynomials_before = false;
-    while(isPolynomic(index) or isCoefficient(index) or (_expression[index] != ')'  and !isFunction(_expressionarr[index - 1]))){ //TODO this must be changed if we process ^ as a function!!!!!!
-        polynomial.previous_polynomial = true; //Note: If previous polynomial is true, the first index won't be a symbol!
-        polynomials_before = true;
-        polynomial.indices.push_back(index);
-        if(_expressionarr[index] == '(' or _expressionarr[index] == ')')
-            polynomial.brackets_indices.push_back(index);
-        if (isProduct(index)) {
-            index -= 1;
-            if(!polynomial.product_rule) {
-                polynomial.product_rule = true;
-                polynomial.product_indices.push_back(index);
-            } else
-                ;
-        } else if (isQuotient(index)) {
-            index -= 1;
-            if(!polynomial.quotient_rule){
-                polynomial.quotient_rule = true;
-                polynomial.product_indices.push_back(index);
-            } else
-                ;
-        } else {
-            index -= 1;
-        }
-    }
-    derivative = differentiate_polynomial();
-    return std::make_tuple(polynomials_before, derivative); //Change that for the derivative!
-}
-
-std::string derivative::differentiate_exponentm(std::string &monomial) {
-    ;
-}
-
-
-
 std::string derivative::differentiate_polynomial() {
     std::string derivative;
-    std::string between_brackets;
-    std::tuple<int, int> bracket_pivot;
-    std::vector<std::tuple<int, int>> bracket_sequence; //In case there are any more thant two brackets in our polynomial range
     bool brackets = false; //True if there are brackets contained in this polynomial
     if(polynomial.previous_polynomial)
         std::sort(polynomial.indices.begin(), polynomial.indices.end()); //Since it was inserted in a backwards fashion, values must be sorted before being processed
-    for(int index : polynomial.indices){
-        polynomial.polynomial += _expressionarr[index]; //We fill the polynomial variable with a string
+    for(int index : polynomial.indices) {
     }
-    
+    auto isprocessed = std::find(polynomial.polynomial_derivative_pairs.begin(), polynomial.polynomial_derivative_pairs.end(), std::make_tuple(polynomial.polynomial, derivative));
+    if(isprocessed != polynomial.polynomial_derivative_pairs.end())
+        ;
+    else
+        polynomial.polynomial_derivative_pairs.push_back(std::make_tuple(polynomial.polynomial, derivative));
     return derivative;
 }
 
-std::string derivative::differentiate_function(std::string &function) {
-    return std::string();
-}
+
 
 std::tuple <std::string, int, char> derivative::fill_function_details(std::tuple<std::string, int, char> function_details, int &S1) {
     auto found = std::find(_func.begin(), _func.end(), _expressionarr[S1 - 2]);
@@ -828,50 +566,192 @@ std::tuple <std::string, int, char> derivative::fill_function_details(std::tuple
 }
 
 
+void derivative::fill_function_to_inside(std::tuple<int, int> &pivot){
+    int S1 = std::get<0>(pivot);
+    int E1 = std::get<1>(pivot);
+    int S2;
+    int E2;
+    std::vector<std::tuple<int, int>> functions_inside;
+    bool inside = false;
+    _function_to_inside_functionp.first = pivot;
+    for (auto &i : _function_ranges){
+        S2 = std::get<0>(i);
+        E2 = std::get<1>(i);
+        if(S1 < S2 and E1 > E2){
+            inside = true;
+            functions_inside.push_back(std::make_tuple(S2, E2));
+        }
+        else
+            continue;
+    }
+    if(!inside)
+        functions_inside.push_back(pivot);
+    else
+        ;
+    _function_to_inside_functionp.second = functions_inside;
+    _function_to_inside_functionm.insert(_function_to_inside_functionp);
+}
 
-std::string derivative::differentiate(int &index, bool &product_rule, bool &quotient_rule) {
+void derivative::find_functions_inside() { //Refactoring needed
+    bool inside;
+    int depth;
+    int order;
+    std::vector<std::tuple<int, int>> order_depth;
+    std::tuple<int, int> pivot;
+    while(!_function_ranges.empty()){
+        depth = 0;
+        order = 0;
+        pivot = _function_ranges.front();
+        _function_ranges.pop_front();
+        if(!_function_to_inside_functionm.empty()){
+            typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator MapIterator; //We calculate the depth by checking if the function exists in other functions
+            for(MapIterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+                auto found = std::find(iter->second.begin(), iter->second.end(), pivot);
+                if(found != iter->second.end()){
+                    inside = true;
+                    depth += 1;
+                }
+                else
+                    continue;
+            }
+            if(!inside){ //If function is not inside any function we have depth 0
+                 //If it is level 0 we can check its order without caring about other functions being stored previously
+                for(int i = 0; i < order_depth.size(); i++){
+                    if(std::get<0>(order_depth[i]) == 0)
+                        order = std::get<1>(order_depth[i]) + 1;
+                    else
+                        continue;
+                }
+                order_depth.push_back(std::make_tuple(depth, order));
+                insert_SE_OD(pivot, std::make_tuple(depth, order));
+            }
+            else { //If it is not inside, the order_depth vector has already been filled
+                for (unsigned i = (int) order_depth.size(); i-- > 0;) { //We make sure that the new tuple is stored with the right order value, comparing with previously stored tuples
+                    if(std::get<0>(order_depth[i]) > depth){
+                        continue;
+                    }
+                    else if(std::get<0>(order_depth[i]) < depth){ //If previous value has lower depth, our new order value will always be 1
+                        order = 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        insert_SE_OD(pivot, std::make_tuple(depth, order));
+                        break;
+                    }
+                    else{
+                        order = std::get<1>(order_depth[i]) + 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        insert_SE_OD(pivot, std::make_tuple(depth, order));
+                        break;
+                    }
+                }
+            }
+        }else{
+            order = 1;
+            order_depth.push_back(std::make_tuple(depth, order));
+            insert_SE_OD(pivot, std::make_tuple(depth, order));
+        }
+        fill_function_to_inside(pivot);
+    }
+}
+
+void derivative::function_parser(){
+    std::vector<std::tuple<int, int>> order_depth;
+    std::tuple<int, int> pivot;
+    fill_function_ranges();
+    find_functions_inside();
+    test1();
+    test2();
+    test3();
+}
+
+//Welcome to hell...
+std::string derivative::differentiate() { //TODO The order of the output will have to be defined in terms of the chain rule between adjacent functions, "next", SE_to_OD and parsed gx will help us with that
+    typedef std::map<std::tuple<int, int>, std::deque<std::tuple<int, int>>>::const_iterator iterator;
+    bool chain_rule;
+    int count = 0;
+    int offset = 0;
+    int SB; //Starting brackets
+    int EB; //Ending brackets
+    std::vector<std::tuple<std::tuple<int, int>, std::string>> parsed_gx; //Vector contains tuples of a tuple containing starting and ending brackets of function or polynomial and a string representing its derivative
+    std::pair<std::tuple<int, int>, std::string> brackets_to_derivativep;
+    std::map<std::tuple<int, int>, std::string> brackets_to_derivative; //It maps the function brackets to its derivative it will be cleared after they are processed!!! we will need it for the chain rule
+    std::pair<std::tuple<int, int>, std::deque<std::tuple<int, int>>> root_to_insidep;
+    std::map<std::tuple<int, int>, std::deque<std::tuple<int, int>>> root_to_inside;
+    std::deque<std::tuple<int, int>> functions_buffer; //The main container where functions inside functions are sequencially processed
+    std::deque<std::tuple<int, int>> roots_buffer; //A temporary container for functions inside functions which in turn have other functions
+    std::vector<std::tuple<int, int>> inside_pivot;
     std::string dfx;
     std::string dgx;
     std::vector<std::string> polynomial_derivative;
+    std::tuple<int, int> root;
     std::tuple<int, int> pivot;
-    std::tuple<int, int> next;
     std::tuple<std::string, int, char> function_details;
     std::string derivative;
     fill_function_ranges();
-    while(!_function_ranges.empty()){
+    while (!_function_ranges.empty()) {
+        chain_rule = false;
         pivot = _function_ranges.front();
+        if(!root_to_inside.empty()) { //If functions inside previous functios had in turn more functions inside
+            for (iterator it = root_to_inside.begin(); it != root_to_inside.end(); it++) { //If the function had functions inside and was already found
+                if(it->first == pivot) //If pivot happens to be one of those functions
+                    pivot = it->first; //We set the pivot to our stored value
+                else
+                    continue;
+            }
+            functions_buffer = root_to_inside[pivot]; //Note : in this case inside pivot will be empty since functions_buffer has already been filled
+        } //Therefore some blocks won't be executed
+        else
+            inside_pivot = _function_to_inside_functionm[pivot]; //Since the function has not been processed yet as a function inside a function inside a function, we will store it normally
+        polynomial.front_function = pivot;
+        SB = std::get<0>(pivot);
+        EB = std::get<1>(pivot);
         _function_ranges.pop_front();
-        next = _function_ranges.front();
         fill_function_details(function_details, std::get<0>(pivot));
-        std::vector<std::tuple<int, int>> inside_pivot;
-        inside_pivot = _function_to_inside_functionm[pivot];
-        std::sort(std::begin(inside_pivot), std::end(inside_pivot), [](std::tuple<int, int> const &t1, std::tuple<int, int> const &t2) { //We sort a vector of tuples
-            return std::get<0>(t1) < std::get<0>(t2); }
-        );
-        if(pivot == _function_to_inside_functionm[pivot][0]){ //If function only has a polynomial inside
-            if(){ //Here we will check if there are any polynomials in front of our current expression
-
+        if(inside_pivot.back() != pivot or !functions_buffer.empty()) //If there are functions inside functions or we are processing chainrule already
+            chain_rule = true;
+        if(chain_rule and inside_pivot.back() != pivot){ //g(x) in f(g(x)) is still to be processed and we found out the function has functions inside
+            if(!functions_buffer.empty()){ //If there are functions already contained in the buffer
+                auto isBuffered = std::find(functions_buffer.begin(), functions_buffer.end(), pivot);
+                if(isBuffered != functions_buffer.end()){ //If a function inside a function has another function inside
+                    for(auto &func : inside_pivot){ //We store it in a tree
+                        roots_buffer.push_back(func);
+                    }
+                    root_to_insidep.first = pivot;
+                    root_to_insidep.second = roots_buffer;
+                    root_to_inside.insert(root_to_insidep);
+                    roots_buffer.clear();
+                }
             }
             else{
-                dfx = differentiate_function(std::get<0>(function_details)); //Remember to check for cases where there is just a coefficient inside (derivative will be equal to zero then)
-                dgx = differentiate_polynomial(std::get<0>(pivot), false, false, false); //We insert the index to the starting brackets instead, when dealing with functions with only polynomials inside
-                derivative += dfx + dgx + std::get<1>(next); //We store the derivative of the function times the derivative on the inside plus the next function's sign
+                for(auto &func : inside_pivot){
+                    functions_buffer.push_back(func);
+                }
+                if(!count) //If we are not iterating through a function with more functions inside
+                    parse_polynomial(SB, EB, true); //The program will expect the first polynomial to be between the starting brackets of the function and the next function of the queue
+                else
+                    parse_polynomial(SB, EB, false);
             }
+            offset = (int) functions_buffer.size();
         }
-        else if(_SE_to_OD[std::get<0>(pivot)] != _SE_to_OD[std::get<0>(next)]){ //If there is a function inside this function
-            dfx = differentiate_function(std::get<0>(function_details));
-            fill_function_details(function_details, std::get<0>(next)); //It would be much better if a differentiate next polynomials function was used for all cases!!
-            if(differentiate_previous_polynomials(std::get<1>(next), polynomial_derivative)){ //If next function to be processed has any polynomials behind it
-                dgx = std::to_string(std::accumulate(polynomial_derivative.begin(), polynomial_derivative.end(), 0)); //NOTE: this will only work for cases where we don't have products or quotients of monomials inside also it won't scale to multivariable!!!
-                derivative += dfx + "*" + dgx; //This will have to be modified
-                // for when there is product rule or quotient rule inside the function
-            }
-            else{ //We have to check if there are polynomials in front of it too note that in such case we would have a single function inside our current function
-                ; //We'll need to create a differentiate next function for that
-            }
+        if(chain_rule and !functions_buffer.empty()){//the expression g(x) in f(g(x)) is being processed
+            count += 1;
+            brackets_to_derivativep.first = pivot;
+            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            brackets_to_derivative.insert(brackets_to_derivativep);//we calculate derivative
+            functions_buffer.pop_front();
+            if(count == offset) //g(x) has already been processed
+                count = 0; //We reset everything for the next queue containing functions inside functions to be processed
+                offset = 0;
+                functions_buffer.clear();
+        }
+        else{//Else we have a function with a single polynomial inside it (Jesus, what a relief...)
+            brackets_to_derivativep.first = pivot;
+            brackets_to_derivativep.second = differentiate_function(std::get<0>(function_details));
+            brackets_to_derivative.insert(brackets_to_derivativep);
+            functions_buffer.pop_front();
         }
     }
 }
+
 
 derivative::derivative(std::string expression){
     _expression = expression;
@@ -881,17 +761,104 @@ derivative::~derivative(){
 
 }
 
+std::tuple<std::string, std::string> derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) {
+    bool polynomial_exists = true;
+    polynomial.front_function = std::make_tuple(sindex, eindex);
+    int cur = sindex; //We will use the starting brackets of the function as the starting point
+    std::string derivative_back;
+    std::string derivative_front;
+    if(polynomial.next_polynomial and polynomial.previous_polynomial){ //If there is a single function we have to iterate back and forth to find out whether not there are any polynomials around it
+        if(isSymbol(_expressionarr[cur - 2][0]) or isSymbol(_expressionarr[cur - 3][0]) and (_expressionarr[cur - 2][0] != '(' or _expressionarr[cur - 3][0] != '(')){ //If there is a symbol behind this function, we know for certain it is a polynomial
+            while (!isFunction(_expressionarr[cur])) { //We iterate from the starting brackets to that function
+                polynomial.polynomial += _expressionarr[cur]; //Until we find the next function
+                polynomial.indices.push_back(cur);
+                cur += 1; //Note: being the first polynomial after the starting brackets
+            } //There will only be a symbol at its end which might be a product or quotient (product rule involving a function and a polynomial)
+            derivative_back = differentiate_polynomial(); //First we find the derivative of the first polynomial, lying behind the first function
+            polynomial.polynomial.clear();
+            if(!isSymbol(_expressionarr[eindex + 1][0])) //If there is no polynomial in front of it
+                polynomial.next_polynomial = false;
+        }
+        else
+            polynomial.previous_polynomial = false;
+    }
+    if(polynomial.next_polynomial and !polynomial.previous_polynomial){ //Here we have ln(sin(x) + 3x)
+        if(!isSymbol(_expressionarr[eindex + 1][0]) or _expressionarr[eindex + 1][0] == ')')
+            polynomial.next_polynomial = false; //We leave the next polynomial unchanged since there is a polynomial in front of the function
+        else{ //Expresssion to be parsed: symbol polynomial brackets
+            polynomial.symbol_polynomial_brackets = true;
+            cur = eindex;
+            while (!isFunction(_expressionarr[cur])) { //We iterate from the starting brackets to that function
+                switch(_expressionarr[cur][0]){
+
+                    case '*' : polynomial.product_indices.push_back(cur); break;
+
+                    case '/' : polynomial.quotient_indices.push_back(cur); break;
+
+                    default: ; break;
+                }
+                polynomial.polynomial += _expressionarr[cur]; //Until we find the next function
+                polynomial.indices.push_back(cur);
+                cur += 1;
+            }
+            derivative_front = differentiate_polynomial();
+            polynomial.polynomial.clear();
+        }
+    }
+    else if(polynomial.next_polynomial and polynomial.previous_polynomial){ //Expressions to be parsed : first : polynomial symbol, second : symbol polynomial symbol or symbol polynomial brackets
+        polynomial.polynomial_symbol = true;
+        if(outerfunction) polynomial.polynomial_symbol = true; else polynomial.symbol_polynomial_symbol = true; //If outer function in this case we have ln(2x + sin(x) - 3x...?) else ln(tan(x)[ + 3x + sin(x) - 2x + ]cos(x))
+        cur = eindex; //Note : Here ...? means possible sequence
+        while (!isFunction(_expressionarr[cur])) { //We iterate from the starting brackets to that function
+            switch(_expressionarr[cur][0]){
+
+                case '*' : polynomial.product_indices.push_back(cur); break;
+
+                case '/' : polynomial.quotient_indices.push_back(cur); break;
+
+                default: ; break;
+            }
+            polynomial.polynomial += _expressionarr[cur]; //Until we find the next function
+            polynomial.indices.push_back(cur);
+            cur += 1;
+        }
+        derivative_front = differentiate_polynomial();
+        polynomial.polynomial.clear();
+    }
+    else if(!polynomial.next_polynomial and !polynomial.previous_polynomial)
+        polynomial_exists = false;
+    else { //symbol polynomial brackets in this case we have a single polynomial such that ln(3x + sin(x))
+        cur = eindex;
+        while (!isFunction(_expressionarr[cur])) { //We iterate from the starting brackets to that function
+            switch(_expressionarr[cur][0]){
+
+                case '*' : polynomial.product_indices.push_back(cur); break;
+
+                case '/' : polynomial.quotient_indices.push_back(cur); break;
+
+                default: ; break;
+            }
+            polynomial.polynomial += _expressionarr[cur]; //Until we find the next function
+            polynomial.indices.push_back(cur);
+            cur += 1;
+        }
+        derivative_front = differentiate_polynomial();
+        polynomial.polynomial.clear();
+    }//Only case we have left is having no polynomial lying in front of the function and a polynomial behind it
+    if(!polynomial_exists)
+        return std::make_tuple("NULL", "NULL");
+    else
+        return std::make_tuple()
+}
+
 bool derivative::isFunction(std::string &pfunction) {
     auto isFunction = std::find(_func.begin(), _func.end(), pfunction);
     return isFunction != _func.end();
 }
 
-class Functionparser{
-
-    private:
-
-
-};
+std::string derivative::differentiate_function(std::string function) {
+    return std::string();
+}
 
 
 void autocalculus(){
@@ -902,7 +869,7 @@ void autocalculus(){
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
         function.find_scopes();
-        function.function_parser();
+        function.find_functions_inside();
         break;
     }
 }
