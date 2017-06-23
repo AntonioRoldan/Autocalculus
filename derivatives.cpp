@@ -48,7 +48,7 @@ class derivative{
         std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
         std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
         bool _repeated_values = false;
-        struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions 
+        struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
             std::vector<int> product_indices; //Note: indices are defined with respect to the polynomial itself rather than the general expression
             std::vector<int> quotient_indices;
             std::vector<int> indices;
@@ -74,8 +74,6 @@ class derivative{
         void insert_index_to_symbols();
         void insert_index_to_function();
         void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
-        void insert_function_to_inside(std::tuple<int, int> function, std::vector<std::tuple<int, int>> functions_inside);
-        void insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char, int> function);
         void insert_symbol(char &symbol, int &index);
         void fill_function_ranges();
         std::string give_function(int &index);
@@ -474,17 +472,6 @@ void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD)
     _SE_to_OD.insert(_SE_to_ODp);
 }
 
-void derivative::insert_function_to_inside(std::tuple<int, int> function, std::vector<std::tuple<int, int>> functions_inside){
-    _function_to_inside_functionp.first = function;
-    _function_to_inside_functionp.second = functions_inside;
-    _function_to_inside_functionm.insert(_function_to_inside_functionp);
-}
-
-void derivative::insert_range_to_function(std::tuple<int, int> range, std::tuple<std::string, int, char, int> function){
-    _range_to_functionp.first = range;
-    _range_to_functionp.second = function;
-    _range_to_functionm.insert(_range_to_functionp);
-}
 
 void derivative::fill_function_ranges() {
     std::vector<int> indices_buffer;
@@ -865,7 +852,7 @@ void autocalculus(){
         std::cin.getline(input, sizeof(input));
         derivative function = derivative(input);
         function.find_scopes();
-        function.find_functions_inside();
+        function.function_parser();
         break;
     }
 }
