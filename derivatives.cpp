@@ -48,7 +48,7 @@ class derivative{
         std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
         std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
         bool _repeated_values = false;
-        struct Polynomial{
+        struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions 
             std::vector<int> product_indices; //Note: indices are defined with respect to the polynomial itself rather than the general expression
             std::vector<int> quotient_indices;
             std::vector<int> indices;
@@ -83,7 +83,7 @@ class derivative{
         void find_scopes();
         void find_functions_inside();
         void fill_function_to_inside(std::tuple<int, int> &pivot);
-        std::tuple<std::string, std::string> parse_polynomial(int &sindex, int &eindex, bool outerfunction);
+        void parse_polynomial(int &sindex, int &eindex, bool outerfunction);
         std::string differentiate_polynomial();
         std::string differentiate();
         std::string differentiate_function(std::string function);
@@ -761,7 +761,7 @@ derivative::~derivative(){
 
 }
 
-std::tuple<std::string, std::string> derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) {
+void derivative::parse_polynomial(int &sindex, int &eindex, bool outerfunction) {
     bool polynomial_exists = true;
     polynomial.front_function = std::make_tuple(sindex, eindex);
     int cur = sindex; //We will use the starting brackets of the function as the starting point
@@ -845,10 +845,6 @@ std::tuple<std::string, std::string> derivative::parse_polynomial(int &sindex, i
         derivative_front = differentiate_polynomial();
         polynomial.polynomial.clear();
     }//Only case we have left is having no polynomial lying in front of the function and a polynomial behind it
-    if(!polynomial_exists)
-        return std::make_tuple("NULL", "NULL");
-    else
-        return std::make_tuple()
 }
 
 bool derivative::isFunction(std::string &pfunction) {
