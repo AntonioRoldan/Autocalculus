@@ -809,9 +809,14 @@ void derivative::function_parser(){
 std::string derivative::differentiate() {
     typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
     std::vector<std::tuple<int, int>> functions_buffer;
+    std::pair<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_function_to_derivativep;
+    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_function_to_derivative;
     int SB;
     int EB;
-    std::string gx;
+    std::string dfx;
+    std::string dgx;
+    std::string function;
+    std::string derivative;
     for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
         if(iter->first == iter->second.back()){ //If the function only has polynomials inside
             functions_buffer.push_back(iter->first);
@@ -822,7 +827,13 @@ std::string derivative::differentiate() {
     for(auto &func : functions_buffer){
         SB = std::get<0>(func);
         EB = std::get<1>(func);
-        gx = differentiate_polynomial(SB, EB);
+        function = give_function(SB);
+        dfx = differentiate_function(function);
+        dgx = differentiate_polynomial(SB, EB);
+        derivative = dfx + '*' + dgx;
+        scope_to_function_to_derivativep.first = func;
+        scope_to_function_to_derivativep.second = std::make_tuple(function, derivative);
+        scope_to_function_to_derivative.insert(scope_to_function_to_derivativep);
     }
 }
 
