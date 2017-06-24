@@ -40,8 +40,6 @@ class derivative{
         std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
         std::map<int, std::string> _index_to_functionm;
         std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-        std::pair<std::tuple<int, int>, std::tuple<std::string, int, char,int>> _range_to_functionp; //Keys: function's range Values: function type, previous sign, exponentiation and depth
-        std::multimap<std::tuple<int,int>, std::tuple<std::string, int, char, int>> _range_to_functionm;
         std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
         std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
         std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
