@@ -59,6 +59,7 @@ class derivative{
             std::string coefficient;
             std::string monomial;
             std::string mderivative; //Derivative of a monomial
+            std::string derivative_buffer;
         };
         Polynomial polynomial;
 
@@ -76,17 +77,16 @@ class derivative{
         void fill_function_ranges();
         std::string give_function(int &index);
         std::vector<int> brackets_bag();
-        std::string product_rule(int &index);
-        std::string quotient_rule(int &index);
+        std::string product_rule(int &index, bool concatenated);
+        std::string quotient_rule(int &index, bool concatenated);
         void find_scopes();
         void find_functions_inside();
         void fill_function_to_inside(std::tuple<int, int> &pivot);
-        std::string differentiate_monomial();
+        std::string differentiate_monomial(std::string &monomial);
         std::string differentiate_polynomial(int &sindex, int &eindex);
         std::string differentiate();
         std::string differentiate_function(std::string function);
         bool isFunction(std::string &pfunction);
-        std::tuple<std::string, int, char> fill_function_details(std::tuple<std::string, int, char> function_details, int &S1);
         void function_parser();
         void test1();
         void test2();
@@ -477,8 +477,8 @@ void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD)
     _SE_to_OD.insert(_SE_to_ODp);
 }
 
-std::string void differentiate_monomial(){
-
+std::string void differentiate_monomial(std::string &monomial){ //TODO Get the function to process monomials raised to some power
+    return monomial.substr(0, monomial.size() - 1);
 }
 
 void derivative::fill_function_ranges() {
@@ -518,32 +518,6 @@ void derivative::fill_function_ranges() {
 }
 
 
-std::tuple <std::string, int, char> derivative::fill_function_details(std::tuple<std::string, int, char> function_details, int &S1) {
-    auto found = std::find(_func.begin(), _func.end(), _expressionarr[S1 - 2]);
-    int symbol;
-    char exponent;
-    if(S1 - 2 != '('){
-        if(found != _func.end()){ //If the cursor lies on a function, it means it is raised to some power
-            if(S1 - 3 != '('){ //And so we check the previous index
-                symbol = S1 - 3;
-            }
-            else
-                symbol = 666; //It doesn´ have any previous symbol
-        }else{
-            symbol = S1 - 2;
-        }
-    }else{
-        symbol = 666;
-    }
-    auto found2 = std::find(_func.begin(), _func.end(), _expressionarr[S1 - 1]);
-    if(found2 != _func.end())
-        exponent = 'v';
-    else
-        exponent = '^';
-    function_details = std::make_tuple(give_function(S1), symbol, exponent);
-    return function_details;
-}
-
 bool derivative::isProduct(int &index) {
     auto isProduct = std::find(_symbols_classificationm['*'].begin(), _symbols_classificationm['*'].end(), _expressionarr[index]);
     return isProduct != _symbols_classificationm['*'].end();
@@ -565,7 +539,7 @@ void derivative::isRule(int &index) {
     } else if (isQuotient(polynomial.symbols[*pos]) and (_expressionarr[*it] == _expressionarr[*next])) {
         polynomial.concatenated = true;
         polynomial.quotient_rule = true;
-    } else if(isProduct(polynomial.symbols[*pos]))
+    } else if(isProduct(index))
         polynomial.product_rule = true;
     else if(isQuotient(index))
         polynomial.quotient_rule = true;
@@ -582,20 +556,85 @@ bool derivative::isConcatenated() {
         return false;
 }
 
-std::string derivative::product_rule(int &index) {
+std::string derivative::product_rule(int &index, bool concatenated) {
+    char atoken; //We will use these tokens
+    char btoken; //for the program to know whether not the varables are numbers or monomials
+    char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
+    atoken = _expressionarr[index - 1][0];
+    btoken = _expressionarr[index + 1][0];
     std::string a;
     std::string da;
     std::string b;
     std::string db;
-    a = std::get<0>(polynomial.index_to_expression[index - 1]);
+    int result1;
+    int result2; //We will need to perform two operations if both expressions are monomials
+    if(concatenated){ //Note in case fractions of fractions have to be processed there will be conflict due to them not consisting of a single value as is the case with products
+        a = polynomial.derivative_buffer;
+        da = differentiate_monomial(polynomial.derivative_buffer);
+    } else{
+        a = std::get<0>(polynomial.index_to_expression[index - 1]);
+        da = std::get<1>(polynomial.index_to_expression[index - 1]);
+    }
     b = std::get<0>(polynomial.index_to_expression[index + 1]);
-    da = std::get<1>(polynomial.index_to_expression[index - 1]);
     db = std::get<1>(polynomial.index_to_expression[index + 1]);
-    
+    if(isNumber(atoken) and isNumber(btoken)) //If both variables are numbers the derivative will be zero
+        return "Null";
+    else if(isNumber(atoken) and !isNumber(btoken)) {
+        variable = b.front();
+        result1 = std::stoi(a) * std::stoi(db.substr(0, db.size() - 1));
+        return std::to_string(result1) + variable;
+    }
+    else if(!isNumber(atoken) and isNumber(btoken)) {
+        variable = a.front();
+        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b);
+        return std::to_string(result1) + variable;
+    }
+    else {
+        variable = a.front();
+        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b.substr(0, b.size() - 1));
+        result2 = std::stoi(a.substr(0, a.size() - 1)) * std::stoi(db.substr(0, db.size() - 1));
+        return std::to_string(result1 + result2) + variable;
+    }
 }
 
-std::string derivative::quotient_rule(int &index){
-
+std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
+    char atoken; //We will use these tokens
+    char btoken; //for the program to know whether not the varables are numbers or monomials
+    char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
+    atoken = _expressionarr[index - 1][0];
+    btoken = _expressionarr[index + 1][0];
+    std::string a;
+    std::string da;
+    std::string b;
+    std::string db;
+    int result1;
+    int result2; //We will need to perform two operations if both expressions are monomials
+    if(concatenated){ //Note in case fractions of fractions have to be processed there will be conflict due to them not consisting of a single value as is the case with products
+        a = polynomial.derivative_buffer;
+        da = differentiate_monomial(polynomial.derivative_buffer);
+    } else{
+        ; //We must throw an error here
+    }
+    b = std::get<0>(polynomial.index_to_expression[index + 1]);
+    db = std::get<1>(polynomial.index_to_expression[index + 1]);
+    if(isNumber(atoken) and isNumber(btoken)) //If both variables are numbers the derivative will be zero
+        return "Null";
+    else if(isNumber(atoken) and !isNumber(btoken)) {
+        variable = b.front();
+        result1 = std::stoi(a) * std::stoi(db.substr(0, db.size() - 1));
+        return '-' + std::to_string(result1) + variable + '/' + std::to_string(std::stoi(b.substr(0, b.size() - 1)) * std::stoi(b.substr(0, b.size() - 1))) + variable;
+    }
+    else if(!isNumber(atoken) and isNumber(btoken)) {
+        variable = a.front();
+        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b);
+        return std::to_string(result1) + variable + '/' + std::to_string(std::stoi(b.substr(0, b.size() - 1)) * std::stoi(b.substr(0, b.size() - 1)));
+    }
+    else { //TODO Process a quotient of two monomials
+        variable = a.front();
+        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b.substr(0, b.size() - 1));
+        result2 = std::stoi(a.substr(0, a.size() - 1)) * std::stoi(db.substr(0, db.size() - 1));
+        return std::to_string(result1 + result2) + variable;
+    }
 }
 
 
@@ -604,16 +643,14 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) {
     std::string coefficient;
     std::string monomial;
     std::string mderivative; //Derivative of a monomial
-    std::vector<std::string> derivative_buffer;
     std::string derivative;
-    int partition;
     char token;
-    int count = 0;
+    int previous_concatenated = 0;
     for (int i = sindex; i < eindex; i++) { //TODO Get the program to ignore first bracket corresponding to sindex
         token = _expressionarr[i].front();
         if (token == 'x' or token == 'y') {
             monomial = _expressionarr[i];
-            mderivative = differentiate_monomial();
+            mderivative = differentiate_monomial(monomial);
             polynomial.index_to_expressionp.first = i;
             polynomial.index_to_expressionp.second = std::make_tuple(monomial, mderivative);
             polynomial.index_to_expression.insert(polynomial.index_to_expressionp);
@@ -628,33 +665,41 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) {
         polynomial.parsed_polynomial.push_back(i);
         polynomial.polynomial += _expressionarr[i];
     }
-    for(int index : polynomial.parsed_polynomial){
+    for(int index : polynomial.parsed_polynomial){ //TODO This routine should be able to process the last monomial of a polynomial
         if(isSymbol(_expressionarr[index][0])){
             isRule(index);
             if(polynomial.product_rule){
                 if(isConcatenated()){
-                    if(!count){
-                        product_rule(index);
+                    if(!previous_concatenated){
+                        polynomial.derivative_buffer = product_rule(index, false);
+                        previous_concatenated = true; //The program will know there was a previous product rule next time
                     }
                     else
-                    ;
+                        polynomial.derivative_buffer = product_rule(index, true);
                 }
                 else{
-                    ;
+                    polynomial.derivative_buffer = product_rule(index, true);
                 }
             }
             else if(polynomial.quotient_rule){
                 if(isConcatenated()){
-                    ;
+                    polynomial.derivative_buffer = quotient_rule(index, false);
+                    previous_concatenated = true;
                 }
                 else{
-                    ;
+                    polynomial.derivative_buffer = quotient_rule(index, true);
                 }
             }
-            else{
-                ;
+            else if(!polynomial.derivative_buffer.empty()){
+                derivative += _expressionarr[index] + std::get<1>(polynomial.index_to_expression[index - 1]);
             }
+            else
+                derivative += polynomial.derivative_buffer + _expressionarr[index];
+                previous_concatenated = false;
+                polynomial.derivative_buffer.clear();
         }
+        else
+            continue;
     }
 }
 
