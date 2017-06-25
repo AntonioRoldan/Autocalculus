@@ -609,11 +609,7 @@ bool derivative::isConcatenated() {
     if(polynomial.product_rule and polynomial.concatenated){
         return true;
     }
-    else if(polynomial.product_rule and polynomial.concatenated){
-        return true;
-    }
-    else
-        return false;
+    else return polynomial.product_rule and polynomial.concatenated;
 }
 
 std::string derivative::product_rule(int &index, bool concatenated) { //TODO get it to return the resulting sign as well!!!
@@ -658,7 +654,7 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
 }
 
 std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
-    char atoken; //We will use these tokens TODO Check division by zero 
+    char atoken; //We will use these tokens TODO Check division by zero
     char btoken; //for the program to know whether not the varables are numbers or monomials
     char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
     atoken = _expressionarr[index - 1][0];
