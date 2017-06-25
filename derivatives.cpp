@@ -658,7 +658,7 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
 }
 
 std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
-    char atoken; //We will use these tokens
+    char atoken; //We will use these tokens TODO Check division by zero 
     char btoken; //for the program to know whether not the varables are numbers or monomials
     char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
     atoken = _expressionarr[index - 1][0];
@@ -706,6 +706,7 @@ void derivative::reset_polynomial() {
 
 
 std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //TODO get the program to correctly assign signs i.e - - is + etc
+    bool previous_null = false;
     std::vector<std::tuple<std::string, std::string>> parsed_polynomial;
     std::string coefficient;
     std::string monomial;
@@ -740,21 +741,23 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //T
             isRule(index);
             if(polynomial.product_rule){
                 if(isConcatenated()){ //Next operation is also product rule
-                    if(!previous_concatenated){ //3x * 4x * 3x
+                    if(!previous_concatenated){ //x + 2x - 3x * 4x * 5x
                         if(product_rule(index, false) != "null"){
                             polynomial.derivative_buffer = product_rule(index, false); //Derivative buffer is empty so its value won't need to be taken into account, we set the condition to false then
                             previous_concatenated = true; //The program will know there was a previous product rule throughout the next iteration
-                        } else ;
+                        } else previous_null = true;
                     }
-                    else //[3x * 4x * 5x] we already found this * 6x * 7x
+                    else if(!previous_null)//[3x * 4x] * 5x we already found expression between brackets
                         polynomial.derivative_buffer = product_rule(index, true);
+                    else ;
                 }
-                else if(previous_concatenated){ //3x * 4x * 5x * [6x * 7x] + 2x
+                else if(previous_concatenated and !previous_null){ //3x * 4x * [5x * 6x] + 2x
                     if(product_rule(index, true) != "null"){
                         polynomial.derivative_buffer = product_rule(index, true);
                         derivative += polynomial.derivative_buffer;
                         polynomial.derivative_buffer.clear();
                         previous_concatenated = false;
+                        previous_null = false;
                     } else ;
                 }
                 else{ //x - [2x * 3x] + 4x
