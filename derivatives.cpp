@@ -627,6 +627,8 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
     std::string db;
     std::string result1;
     std::string result2; //We will need to perform two operations if both expressions are monomials
+    char exponent = '^';
+    std::string derivative;
     if(concatenated){
         a = polynomial.derivative_buffer;
         da = differentiate_monomial(a, sign);
@@ -638,13 +640,14 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
     db = std::get<1>(polynomial.index_to_expression[index + 1]);
     atoken = a.front();
     btoken = b.front();
-    if(isNumber(atoken) and isNumber(btoken) and !isInside(a, '^') and !isInside(b, '')) //If both variables are numbers the derivative will be zero
-        return "null";
+    if(isNumber(atoken) and isNumber(btoken) and (!isInside(a, exponent) and !isInside(b, exponent))) //If both variables are numbers the derivative will be zero
+        derivative = "null";
     else{
         result1 = mulMonomials(da, b);
         result2 = mulMonomials(db, a);
-        addPolynomials(result1, result2);
+        derivative = addPolynomials(result1, result2);
     }
+    return derivative;
 }
 
 std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
@@ -701,10 +704,10 @@ bool derivative::isInside(const std::string & str, char c)
 std::string derivative::addPolynomials(std::string &a, std::string &b) {
     char exponent = '^';
     if(isInside(a, exponent) and isInside(b, exponent)){ //If both monomials are raised to some power
-        
+        ;
     }
     if(isInside(a, exponent) and !isInside(b, exponent)){
-
+        ;
     }
 }
 
@@ -731,7 +734,7 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) {
         b_exponentint = std::stoi(b.substr((unsigned long) (posb + 1), b.size()));
         result_exponent = a_exponentint + b_exponentint;
         result_integer = a_integer * b_integer;
-        result = std::to_string(result_integer) + 'x^' + std::to_string(result_exponent);
+        result = std::to_string(result_integer) + "x" + std::to_string(result_exponent);
     }
     else if(isInside(a, exponent) and !isInside(b, exponent)){ //3x^2 and 4x or 4
         pos = (int) a.find(exponent);
@@ -739,57 +742,52 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) {
         a_exponent.assign(pos - 1, pos); //pos - 1 to ensure we get the variable as well it will store x^ here
         a_exponentint = std::stoi(a.substr(pos + 1, a.size())); //We store the 2 here
         variable = a_exponent.back(); //It will be an x here
-        switch(isNumber(b.front())){ // 3x^2 * 4
-            case true :
-                b_integer = std::stoi(b);
-                result = std::to_string(a_integer * b_integer) + variable + a_exponent + std::to_string(a_exponentint); //is 12x^2
-                break;
-            case false : //3x^2 * 4x
-                b_integer = std::stoi(b.substr(0, b.size() - 1));
-                a_exponentint += 1;
-                a_exponent += std::to_string(a_exponentint);
-                result = std::to_string(a_integer * b_integer) + a_exponent;
-                break;
+        if(isNumber(b.front())) { // 3x^2 * 4
+            b_integer = std::stoi(b);
+            result = std::to_string(a_integer * b_integer) + variable + a_exponent +
+                     std::to_string(a_exponentint); //is 12x^2
         }
+        else{
+            b_integer = std::stoi(b.substr(0, b.size() - 1));
+            a_exponentint += 1;
+            a_exponent += std::to_string(a_exponentint);
+            result = std::to_string(a_integer * b_integer) + a_exponent;
+        }
+        // 3x^2 * 4x
     }
     else if(!isInside(a, exponent) and isInside(b, exponent)){
         pos = (int) b.find(exponent);
         b_integer = std::stoi(b.substr(0, (unsigned long) pos - 1));
-        b_exponent.assign(pos-1, pos);
-        b_exponentint = std::stoi(b.substr(pos + 1, b.size()));
+        b_exponent.assign((unsigned long) (pos - 1), (char) pos);
+        b_exponentint = std::stoi(b.substr((unsigned long) (pos + 1), b.size()));
         variable = b_exponent.back();
-        switch(isNumber(a.front())){
-            case true :
-                a_integer = std::stoi(a);
-                result = std::to_string(a_integer * b_integer) + variable + b_exponent + std::to_string(b_exponentint);
-                break;
-            case false :
-                a_integer = std::stoi(a.substr(0, a.size() - 1));
-                b_exponentint += 1;
-                a_exponent += std::to_string(b_exponentint);
-                result = std::to_string(a_integer * b_integer) + b_exponent;
-                break;
+        if(isNumber(a.front())){
+            a_integer = std::stoi(a);
+            result = std::to_string(a_integer * b_integer) + variable + b_exponent + std::to_string(b_exponentint);
+        }
+        else{
+            a_integer = std::stoi(a.substr(0, a.size() - 1));
+            b_exponentint += 1;
+            a_exponent += std::to_string(b_exponentint);
+            result = std::to_string(a_integer * b_integer) + b_exponent;
         }
     }
-    else //If both are not raised to any power, now a might or b might be a number but never a and b since we deal with that case out of our function
-        switch(isNumber(a.front())){ //We could have 3x * 4x or 3x * 4 or 4 * 3x
-            case true : //4 * 3x
-                a_integer = std::stoi(a);
-                b_integer = std::stoi(a.substr(0, a.size() - 1));
-                result = std::to_string(a_integer * b_integer) + a.front();
-                break;
-            case false :
-                if(!isNumber(b.front())){ //3x * 4x
-                    a_integer = std::stoi(a.substr(0, a.size() - 1));
-                    b_integer = std::stoi(b.substr(0, b.size() - 1));
-                    result = std::to_string(a_integer * b_integer);
-                } else { //3x * 4
-                    a_integer = std::stoi(a.substr(0, a.size() - 1));
-                    b_integer = std::stoi(b);
-                    result = std::to_string(a_integer * b_integer);
-                }
-                break;
-        }
+    else if(isNumber(a.front())) { //We could have 3x * 4x or 3x * 4 or 4 * 3x
+            //4 * 3x
+            a_integer = std::stoi(a);
+            b_integer = std::stoi(a.substr(0, a.size() - 1));
+            result = std::to_string(a_integer * b_integer) + a.front();
+    }
+    else if(!isNumber(b.front())){ //3x * 4x
+        a_integer = std::stoi(a.substr(0, a.size() - 1));
+        b_integer = std::stoi(b.substr(0, b.size() - 1));
+        result = std::to_string(a_integer * b_integer);
+    }
+    else { //3x * 4
+        a_integer = std::stoi(a.substr(0, a.size() - 1));
+        b_integer = std::stoi(b);
+        result = std::to_string(a_integer * b_integer);
+    }
     return result;
 }
 
@@ -807,7 +805,7 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //T
     for (int i = sindex; i < eindex; i++) {
         if(isSymbol(_expressionarr[i][0]))
             sign = _expressionarr[i][0];
-        if(_expressionarr[i] == '(')
+        if(_expressionarr[i][0] == '(')
             ;
         else
             token = _expressionarr[i].front();
