@@ -88,7 +88,7 @@ class derivative{
         std::string differentiate_polynomial(int &sindex, int &eindex);
         std::string differentiate();
         std::string differentiate_function(std::string function);
-        std::string addPolynomials(std::string &a, std::string &b);
+        std::string addMonomials(std::string &a, std::string &b);
         std::string mulMonomials(std::string &a, std::string &b);
         bool isInside(const std::string & str, char c);
         bool isFunction(std::string &pfunction);
@@ -645,10 +645,11 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
     else{
         result1 = mulMonomials(da, b);
         result2 = mulMonomials(db, a);
-        derivative = addPolynomials(result1, result2);
+        derivative = addMonomials(result1, result2);
     }
     return derivative;
 }
+
 
 std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
     char atoken; //We will use these tokens TODO Check division by zero
@@ -672,21 +673,8 @@ std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get
     db = std::get<1>(polynomial.index_to_expression[index + 1]);
     if(isNumber(atoken) and isNumber(btoken)) //If both variables are numbers the derivative will be zero
         return "null";
-    else if(isNumber(atoken) and !isNumber(btoken)) {
-        variable = b.front();
-        result1 = std::stoi(a) * std::stoi(db.substr(0, db.size() - 1));
-        return '-' + std::to_string(result1) + variable + '/' + std::to_string(std::stoi(b.substr(0, b.size() - 1)) * std::stoi(b.substr(0, b.size() - 1))) + variable;
-    }
-    else if(!isNumber(atoken) and isNumber(btoken)) {
-        variable = a.front();
-        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b);
-        return std::to_string(result1) + variable + '/' + std::to_string(std::stoi(b.substr(0, b.size() - 1)) * std::stoi(b.substr(0, b.size() - 1)));
-    }
-    else { //TODO Process a quotient of two monomials
-        variable = a.front();
-        result1 = std::stoi(da.substr(0, da.size() - 1)) * std::stoi(b.substr(0, b.size() - 1));
-        result2 = std::stoi(a.substr(0, a.size() - 1)) * std::stoi(db.substr(0, db.size() - 1));
-        return std::to_string(result1 + result2) + variable;
+    else{
+        ;
     }
 }
 
@@ -701,17 +689,23 @@ bool derivative::isInside(const std::string & str, char c)
     return str.find(c) != std::string::npos;
 }
 
-std::string derivative::addPolynomials(std::string &a, std::string &b) {
+std::string derivative::addMonomials(std::string &a, std::string &b) {
     char exponent = '^';
     if(isInside(a, exponent) and isInside(b, exponent)){ //If both monomials are raised to some power
         ;
     }
-    if(isInside(a, exponent) and !isInside(b, exponent)){
+    else if(isInside(a, exponent) and !isInside(b, exponent)){
+        ;
+    }
+    else if(!isInside(a, exponent) and isInside(b, exponent)){
+        ;
+    }
+    else{
         ;
     }
 }
 
-std::string derivative::mulMonomials(std::string &a, std::string &b) {
+std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If there's a negative number we add it as a character and check in the next process if str.back() is equal to - 
     char exponent = '^';
     int pos;
     int posb; //Only used to store the position where character ^ is found in the b string in case both monomials are raised to some power
