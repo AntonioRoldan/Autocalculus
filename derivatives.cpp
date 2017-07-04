@@ -84,11 +84,12 @@ class derivative{
         void find_functions_inside();
         void fill_function_to_inside(std::tuple<int, int> &pivot);
         void parse_token(std::string &a, std::string &b);
+        char parse_signs(char a_sign, char b_sign);
         std::string differentiate_monomial(std::string &monomial, char &sign);
         std::string differentiate_polynomial(int &sindex, int &eindex);
         std::string differentiate();
         std::string differentiate_function(std::string function);
-        std::string addMonomials(std::string &a, std::string &b);
+        std::string addMonomials(std::string &a, std::string &b, char &sign);
         std::string mulMonomials(std::string &a, std::string &b);
         bool isInside(const std::string & str, char c);
         bool isFunction(std::string &pfunction);
@@ -275,8 +276,8 @@ void derivative::detect_functions(){ //Refactoring needed
                         else{
                             previous_number = false;
                             _expressionarr.push_back(number);
+                            number.clear();
                         }
-                        number.clear();
                     }
                     if(isSymbol(_expression[i])){ //TODO Get the program to process exponents to expressions between brackets as functions
                         if(_expression[i] == '^' and _expression[i - 1] == ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
@@ -523,25 +524,44 @@ void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD)
 std::string derivative::differentiate_monomial(std::string &monomial, char &sign){ //TODO Test phase Get the function to process monomials raised to some power
     std::string exponent;
     std::string derivative;
+    std::string coefficient;
     int partition;
+    if(monomial == "x") //We handle the case where we have x
+        derivative = sign + 'x';
+        return derivative;
     for(int i = 0; i < monomial.size(); i++) {
         if (monomial[i] == '^') {
             partition = i;
-            exponent = monomial.substr(monomial.size() - (monomial.size() - partition + 1), monomial.size());
+            exponent = monomial.substr(partition, monomial.size());
             monomial = monomial.substr(0, partition - 1);
             break;
         }
         continue;
     }
-    if(exponent.back() == '^')
-        if(exponent.front() == '2')
-            derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(monomial.substr(0, monomial.size() - exponent.size())));
-        else{
-            derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(monomial.substr(0, monomial.size() - exponent.size())));
-            exponent.erase(exponent.begin());
-            derivative += '^' + std::to_string(std::stoi(exponent) - 1);
+    if(exponent.back() == '^') //Handles the case where we have Nx^N
+        if(monomial != "x"){
+            if(exponent.front() == '2' and exponent.size() == 2) { //Nx^2
+                derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(
+                        monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
+                derivative += 'x';
+            }
+            else{ //Nx^N
+                derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
+                exponent.erase(exponent.begin());
+                derivative += "x^" + std::to_string(std::stoi(exponent) - 1);
+            }
         }
-    else //If exponent.back is not equal to that we simply have no exponent and therefore will have this case Nx
+        else{ //Else we have x^N or x^2
+            if(exponent.front() == '2' and exponent.size() == 2){
+                derivative = "2x";
+            }
+            else{
+                coefficient = exponent.substr(1, exponent.size());
+                exponent = std::to_string(std::stoi(exponent.substr(1, exponent.size())) - 1);
+                derivative = derivative + '^' + exponent;
+            }
+        }
+    else //If exponent.back is not equal to '^' we simply have no exponent and therefore will have this case Nx
         derivative = monomial.substr(0, monomial.size() - 1);
     return sign + derivative;
 }
@@ -616,28 +636,44 @@ bool derivative::isConcatenated() {
     else return polynomial.product_rule and polynomial.concatenated;
 }
 
+char derivative::parse_signs(char a_sign, char b_sign){
+    if(a_sign != b_sign) //If - + or + -
+        return '-';
+    else if(a_sign == '-') //or b_sign for that matter
+        return '+';
+    else
+        return '+';
+}
+
 std::string derivative::product_rule(int &index, bool concatenated) { //TODO get it to return the resulting sign as well!!!
     char atoken; //We will use these tokens
     char btoken; //for the program to know whether not the varables are numbers or monomials
-    char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
-    char sign = _expressionarr[index][0];
     std::string a;
     std::string da;
     std::string b;
     std::string db;
     std::string result1;
     std::string result2; //We will need to perform two operations if both expressions are monomials
+    char a_sign;
+    char b_sign;
+    char sign;
     char exponent = '^';
     std::string derivative;
     if(concatenated){
         a = polynomial.derivative_buffer;
-        da = differentiate_monomial(a, sign);
+        a_sign = a.back();
+        a.erase(a.back());
+        da = differentiate_monomial(a, a_sign);
     } else{
         a = std::get<0>(polynomial.index_to_expression[index - 1]);
         da = std::get<1>(polynomial.index_to_expression[index - 1]);
+        a_sign = da.back();
+        da.erase(a.back());
     }
     b = std::get<0>(polynomial.index_to_expression[index + 1]);
     db = std::get<1>(polynomial.index_to_expression[index + 1]);
+    b_sign = db.back();
+    db.erase(db.back());
     atoken = a.front();
     btoken = b.front();
     if(isNumber(atoken) and isNumber(btoken) and (!isInside(a, exponent) and !isInside(b, exponent))) //If both variables are numbers the derivative will be zero
@@ -645,7 +681,8 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
     else{
         result1 = mulMonomials(da, b);
         result2 = mulMonomials(db, a);
-        derivative = addMonomials(result1, result2);
+        sign = parse_signs(a_sign, b_sign);
+        derivative = addMonomials(result1, result2, sign);
     }
     return derivative;
 }
@@ -655,14 +692,15 @@ std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get
     char atoken; //We will use these tokens TODO Check division by zero
     char btoken; //for the program to know whether not the varables are numbers or monomials
     char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
-    atoken = _expressionarr[index - 1][0];
-    btoken = _expressionarr[index + 1][0];
     std::string a;
     std::string da;
     std::string b;
     std::string db;
     int result1;
     int result2; //We will need to perform two operations if both expressions are monomials
+    atoken = a.front();
+    btoken = b.front();
+    std::string derivative;
     if(!concatenated){ //Note in case fractions of fractions have to be processed there will be conflict due to them not consisting of a single value as is the case with products
         a = std::get<0>(polynomial.index_to_expression[index - 1]);
         da = std::get<1>(polynomial.index_to_expression[index - 1]);
@@ -676,6 +714,7 @@ std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get
     else{
         ;
     }
+    return derivative;
 }
 
 void derivative::reset_polynomial() {
@@ -689,12 +728,15 @@ bool derivative::isInside(const std::string & str, char c)
     return str.find(c) != std::string::npos;
 }
 
-std::string derivative::addMonomials(std::string &a, std::string &b) {
+std::string derivative::addMonomials(std::string &a, std::string &b, char &sign) {
     char exponent = '^';
-    if(isInside(a, exponent) and isInside(b, exponent)){ //If both monomials are raised to some power
+    bool negative_operation = false; //i.e -3x - 4
+    if(sign == '-')
+        negative_operation = true;
+    if(isInside(a, exponent) and isInside(b, exponent)){ //If both monomials are raised to some power they can only be added if they have same exponent
         ;
     }
-    else if(isInside(a, exponent) and !isInside(b, exponent)){
+    else if(isInside(a, exponent) and !isInside(b, exponent)){ //If we have an integer and a monomial addition cannot be performed
         ;
     }
     else if(!isInside(a, exponent) and isInside(b, exponent)){
@@ -705,7 +747,7 @@ std::string derivative::addMonomials(std::string &a, std::string &b) {
     }
 }
 
-std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If there's a negative number we add it as a character and check in the next process if str.back() is equal to - 
+std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If there's a negative number we add it as a character and check in the next process if str.back() is equal to -
     char exponent = '^';
     int pos;
     int posb; //Only used to store the position where character ^ is found in the b string in case both monomials are raised to some power
@@ -713,7 +755,6 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
     int b_integer;
     int a_exponentint;
     int b_exponentint;
-    char variable;
     std::string a_exponent;
     std::string b_exponent;
     int result_exponent;
@@ -728,59 +769,55 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
         b_exponentint = std::stoi(b.substr((unsigned long) (posb + 1), b.size()));
         result_exponent = a_exponentint + b_exponentint;
         result_integer = a_integer * b_integer;
-        result = std::to_string(result_integer) + "x" + std::to_string(result_exponent);
+        result = std::to_string(result_integer) + 'x' + '^' + std::to_string(result_exponent);
     }
     else if(isInside(a, exponent) and !isInside(b, exponent)){ //3x^2 and 4x or 4
         pos = (int) a.find(exponent);
-        a_integer = std::stoi(a.substr(0, (unsigned long) pos - 1));
-        a_exponent.assign(pos - 1, pos); //pos - 1 to ensure we get the variable as well it will store x^ here
-        a_exponentint = std::stoi(a.substr(pos + 1, a.size())); //We store the 2 here
-        variable = a_exponent.back(); //It will be an x here
+        a_integer = std::stoi(a.substr(0, (unsigned long) pos - 1)); //We store 3 here
+        a_exponent.assign(a.begin() + pos - 1, a.begin() + pos); //pos - 1 to ensure we get the variable as well it will store x^ here
+        a_exponentint = std::stoi(a.substr(pos + 1, a.size())); //We store the 2 for the exponent here
         if(isNumber(b.front())) { // 3x^2 * 4
             b_integer = std::stoi(b);
-            result = std::to_string(a_integer * b_integer) + variable + a_exponent +
+            result = std::to_string(a_integer * b_integer) + a_exponent +
                      std::to_string(a_exponentint); //is 12x^2
         }
-        else{
+        else{ // 3x^2 * 4x
             b_integer = std::stoi(b.substr(0, b.size() - 1));
             a_exponentint += 1;
             a_exponent += std::to_string(a_exponentint);
             result = std::to_string(a_integer * b_integer) + a_exponent;
         }
-        // 3x^2 * 4x
     }
     else if(!isInside(a, exponent) and isInside(b, exponent)){
         pos = (int) b.find(exponent);
         b_integer = std::stoi(b.substr(0, (unsigned long) pos - 1));
-        b_exponent.assign((unsigned long) (pos - 1), (char) pos);
+        b_exponent.assign(b.begin() + pos - 1, b.begin() + pos);
         b_exponentint = std::stoi(b.substr((unsigned long) (pos + 1), b.size()));
-        variable = b_exponent.back();
-        if(isNumber(a.front())){
+        if(isNumber(a.front())){ //4 * 3x^2
             a_integer = std::stoi(a);
-            result = std::to_string(a_integer * b_integer) + variable + b_exponent + std::to_string(b_exponentint);
+            result = std::to_string(a_integer * b_integer) + b_exponent + std::to_string(b_exponentint);
         }
-        else{
+        else{ //4x * 3x^2
             a_integer = std::stoi(a.substr(0, a.size() - 1));
             b_exponentint += 1;
             a_exponent += std::to_string(b_exponentint);
             result = std::to_string(a_integer * b_integer) + b_exponent;
         }
     }
-    else if(isNumber(a.front())) { //We could have 3x * 4x or 3x * 4 or 4 * 3x
-            //4 * 3x
+    else if(isNumber(a.front())) { //4 * 3x
             a_integer = std::stoi(a);
-            b_integer = std::stoi(a.substr(0, a.size() - 1));
-            result = std::to_string(a_integer * b_integer) + a.front();
+            b_integer = std::stoi(b.substr(0, b.size() - 1));
+            result = std::to_string(a_integer * b_integer) + b.front();
     }
     else if(!isNumber(b.front())){ //3x * 4x
         a_integer = std::stoi(a.substr(0, a.size() - 1));
         b_integer = std::stoi(b.substr(0, b.size() - 1));
-        result = std::to_string(a_integer * b_integer);
+        result = std::to_string(a_integer * b_integer) + a.front(); //a.front() is 'x'
     }
     else { //3x * 4
         a_integer = std::stoi(a.substr(0, a.size() - 1));
         b_integer = std::stoi(b);
-        result = std::to_string(a_integer * b_integer);
+        result = std::to_string(a_integer * b_integer) + a.front();
     }
     return result;
 }
@@ -796,8 +833,8 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //T
     char sign;
     char token;
     int previous_concatenated = 0;
-    for (int i = sindex; i < eindex; i++) {
-        if(isSymbol(_expressionarr[i][0]))
+    for (int i = sindex; i < eindex; i++) { //In the end we will have the indices to every symbol, a hash table mapping indices to an expresson plus its derivative
+        if(isSymbol(_expressionarr[i][0])) //And a vector containing indices to all strings contained within this specific sub-expression
             sign = _expressionarr[i][0];
         if(_expressionarr[i][0] == '(')
             ;
@@ -810,7 +847,7 @@ std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //T
             polynomial.index_to_expressionp.second = std::make_tuple(monomial, mderivative);
             polynomial.index_to_expression.insert(polynomial.index_to_expressionp);
         } else if (isNumber(token)) {
-            if(isInside(_expressionarr[i], '^')){
+            if(isInside(_expressionarr[i], '^')){ //We check
                 monomial = _expressionarr[i];
                 mderivative = differentiate_monomial(monomial, sign);
                 polynomial.index_to_expressionp.first = i;
