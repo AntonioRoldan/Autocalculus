@@ -47,17 +47,13 @@ class derivative{
         std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
         std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
         bool _repeated_values = false;
-        bool _negative_operation = false;
         struct Monomials{ //It stores a pair of monomials to perform the product on quotient rule on them and their subsequent arithmetic operations
-            bool _subtract_monomials = false;
-            bool negative_operation = false;
+            bool subtract_monomials = false;
+            bool addition_or_subtraction;
             std::string a;
             std::string b;
             std::string da;
             std::string db;
-            std::string monomial_a;
-            std::string monomial_b;
-            std::string mderivative;
             char a_sign;
             char b_sign;
         };
@@ -65,6 +61,10 @@ class derivative{
             bool product_rule = false;
             bool quotient_rule = false;
             bool concatenated = false;
+            bool change_sign = false;
+            bool arithmetic = false;
+            bool negative_operation;
+            std::string sign;
             std::vector<int> symbols; //Symbol indices
             std::pair<int, std::tuple<std::string, std::string>> index_to_expressionp;
             std::map<int, std::tuple<std::string, std::string>> index_to_expression;
@@ -88,7 +88,7 @@ class derivative{
         void insert_symbol(char &symbol, int &index);
         void fill_function_ranges();
         void set_monomials(int &index, bool concatenated);
-        int perform_arithmetic(int a, int b, bool addition);
+        int perform_arithmetic(int a, int b);
         std::string give_function(int &index);
         std::vector<int> brackets_bag();
         std::string product_rule(int &index, bool concatenated);
@@ -96,6 +96,8 @@ class derivative{
         void find_scopes();
         void find_functions_inside();
         void fill_function_to_inside(std::tuple<int, int> &pivot);
+        void set_derivative_buffer(std::string &result);
+        void set_sign_arithmetic(int &result);
         char parse_signs(char a_sign, char b_sign);
         std::string differentiate_monomial(std::string &monomial, char &sign);
         std::string differentiate_polynomial(int &sindex, int &eindex);
@@ -103,6 +105,8 @@ class derivative{
         std::string differentiate_function(std::string function);
         std::string arithmetic(std::string &a, std::string &b, char &sign);
         std::string mulMonomials(std::string &a, std::string &b);
+        std::string addMonomials(std::string &a, std::string &b, char &sign);
+        std::string subMonomials(std::string &a, std::string &b, char &sign);
         bool hasExponent(const std::string & str);
         bool isFunction(std::string &pfunction);
         void function_parser();
@@ -688,10 +692,10 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
     if(isNumber(atoken) and isNumber(btoken) and (!hasExponent(polynomial.monomials.a) and !hasExponent(polynomial.monomials.b))) //If both variables are numbers the derivative will be zero
         derivative = "null";
     else{
+        sign = parse_signs(polynomial.monomials.a_sign, polynomial.monomials.b_sign);
         result1 = mulMonomials(polynomial.monomials.da, polynomial.monomials.b);
         result2 = mulMonomials(polynomial.monomials.db, polynomial.monomials.a);
-        sign = parse_signs(polynomial.monomials.a_sign, polynomial.monomials.b_sign);
-        derivative = arithmetic(result1, result2, sign);
+        derivative = addMonomials(result1, result2, sign);
     }
     return derivative;
 }
@@ -700,7 +704,6 @@ std::string derivative::product_rule(int &index, bool concatenated) { //TODO get
 std::string derivative::quotient_rule(int &index, bool concatenated){ //TODO get the program to process h(x) raised to some power (hint: use the pow function)
     char atoken; //We will use these tokens TODO Check division by zero
     char btoken; //for the program to know whether not the varables are numbers or monomials
-    char variable; //It stores x or y for the resulting monomial to be returned after operating a monomial and a number together
     char sign;
     char a_sign;
     char b_sign;
@@ -747,27 +750,78 @@ bool derivative::hasExponent(const std::string & str)
     return str.find(c) != std::string::npos;
 }
 
-int derivative::perform_arithmetic(int a_integer, int b_integer, bool addition){
+std::string derivative::addMonomials(std::string &a, std::string &b, char &sign){
+    std::string result;
+    polynomial.monomials.addition_or_subtraction = true;
+    result = arithmetic(a, b, sign);
+    polynomial.sign = 'null' ? result = 'null' : result = polynomial.sign + result;
+    return result;
+}
+
+std::string derivative::subMonomials(std::string &a, std::string &b, char &sign) {
+    std::string result;
+    polynomial.monomials.addition_or_subtraction = false;
+    result = arithmetic(a, b, sign);
+    return result;
+}
+
+void derivative::set_sign_arithmetic(int &result) {
+    if(result < 0){
+        if(polynomial.change_sign){
+            polynomial.change_sign = polynomial.change_sign;
+        } else
+            polynomial.change_sign = !polynomial.change_sign;
+        polynomial.change_sign ? polynomial.sign = '-' : polynomial.sign = '+';
+    }
+    else if(result > 0){
+        if(polynomial.change_sign){
+            polynomial.change_sign = polynomial.change_sign;
+        } else
+            polynomial.change_sign = !polynomial.change_sign;
+        polynomial.change_sign ? polynomial.sign = '-' : polynomial.sign = '+';
+    }
+    else{
+        polynomial.sign = 'null';
+    }
+}
+
+int derivative::perform_arithmetic(int a_integer, int b_integer){
     int result_integer;
-    if(addition){
-        result_integer = _negative_operation ? a_integer - b_integer : a_integer + b_integer;
+    if(polynomial.monomials.addition_or_subtraction){
+        result_integer = polynomial.negative_operation ? a_integer - b_integer : a_integer + b_integer;
+        set_sign_arithmetic(result_integer);
     }
     else{ //If it is a subtraction and the resulting sign after the product is negative, a will be negative and b positive
-        result_integer = _negative_operation ? (-a_integer + b_integer) : a_integer - b_integer;
+        result_integer = polynomial.negative_operation ? (-a_integer + b_integer) : a_integer - b_integer;
     }
     return result_integer;
 }
 
-std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) { //TODO when a and b cannot be summed, a sutable routine checking for the length of polynomial buffer must be created in case there are concatenated product rules
+void derivative::set_derivative_buffer(std::string &result){
+    if(!polynomial.monomials.addition_or_subtraction and !polynomial.arithmetic){
+
+    }
+    else if(polynomial.monomials.addition_or_subtraction and !polynomial.arithmetic){
+        if(polynomial.derivative_buffer.size() > 1){//If the previous monomials could not be added either, and this monomial cannot be added, the second monomial of the first polynomial and the first monomial of the second polynomial might be added
+
+        }
+        else if(polynomial.derivative_buffer.size()){//If the previous monomial has been reduced to a single expression the previous monomial and the first monomial of the polynomial might be added
+            ;
+        }
+    }
+}
+
+std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) { //TODO when a and b cannot be summed, a suitable routine checking for the length of polynomial buffer must be created in case there are concatenated product rules
     std::string a_exponent;
     int a_integer;
     std::string b_exponent;
     int b_integer;
     int result_integer;
-    bool negative_operation = false; //i.e -3x - 4
+    polynomial.arithmetic = true;
     std::string result;
+    polynomial.negative_operation = false;
     if(sign == '-')
-        _negative_operation = true;
+        polynomial.negative_operation = true;
     if(hasExponent(a) and hasExponent(b)){ //If both monomials are raised to some power
         auto pos = a.find('^');
         auto posb = b.find('^');
@@ -776,11 +830,13 @@ std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) {
         if(a_exponent == b_exponent){ //They can only be added if they share their exponent
             a_integer = std::stoi(a.substr(0, pos - 2)); //-2 to make sure we get rid of the x
             b_integer = std::stoi(b.substr(0, posb - 2));
-            result_integer = perform_arithmetic(a_integer, b_integer, true);
+            result_integer = perform_arithmetic(a_integer, b_integer);
             result = std::to_string(result_integer) + 'x' + '^' + a_exponent;
         }
-        else
-            result = polynomial.monomials._subtract_monomials ? a + '-' + b : a + '+' + b;
+        else{
+            result = polynomial.monomials.subtract_monomials ? a + '-' + b : a + '+' + b;
+            polynomial.arithmetic = false;
+        }
     }
     else if((hasExponent(a) and !hasExponent(b)) or (!hasExponent(a) and hasExponent(b))){ //If there is a discrepancy in degrees between monomials
         return a + '+' + b; //They cannot be added and so we return the expression
@@ -788,17 +844,23 @@ std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) {
     else if(a.front() == 'x' and a.front() == b.front()){ //If we have something like 3x + 4x
         a_integer = std::stoi(a.substr(0, a.size() - 1));
         b_integer = std::stoi(b.substr(0, b.size() - 1));
-        result_integer = perform_arithmetic(a_integer, b_integer, true);
+        result_integer = perform_arithmetic(a_integer, b_integer);
         result = std::to_string(result_integer) + 'x';
     }
     else if(a.front() != 'x' and b.front() != 'x'){ //If they both are integers
         a_integer = std::stoi(a);
         b_integer = std::stoi(b);
-        result_integer = perform_arithmetic(a_integer, b_integer, true);
+        result_integer = perform_arithmetic(a_integer, b_integer);
         result = std::to_string(result_integer);
     }
-    else
-        result = polynomial.monomials._subtract_monomials ? a + '-' + b : a + '+' + b;
+    else{
+        result = polynomial.monomials.subtract_monomials ? a + '-' + b : a + '+' + b;
+        polynomial.arithmetic = false;
+    }
+    if(!polynomial.monomials.subtract_monomials and !arithmetic){
+        result = '-'+ result;
+    }
+    set_derivative_buffer(result);
     return result;
 }
 
@@ -878,7 +940,7 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
 }
 
 
-std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //TODO get the program to correctly assign signs i.e - - is + etc
+std::string derivative::differentiate_polynomial(int &sindex, int &eindex) { //TODO get the program to correctly assign signs i.e - - is + etc, this will apply when a concatenated product/quotient rule has given an unexpected sign
     bool previous_null = false;
     std::vector<std::tuple<std::string, std::string>> parsed_polynomial;
     std::string coefficient;
