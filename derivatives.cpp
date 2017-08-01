@@ -17,112 +17,112 @@
 #include <sstream>
 
 class derivative{
-
-
-    private:
-
-        std::string _expression;
-        std::deque<std::tuple<int, int>> _function_ranges;
-        std::vector<std::string> _expressionarr;
-        std::vector<char> _symbols_stored;
-        bool _use_multimap = false;
-        std::vector<std::string> _functions;
-        std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
-        std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
-        std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
-        std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-        std::map<std::string, std::vector<int>> _function_to_rangem;
-        std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
-        std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
-        std::map<std::size_t, bool> _index_to_bracketsm;
-        std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
-        std::map<char,std::vector<int>> _symbols_classificationm;
-        std::pair<int , char> _index_to_symbolsp;
-        std::map<int, char> _index_to_symbolsm;
-        std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
-        std::map<int, std::string> _index_to_functionm;
-        std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-        std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
-        std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
-        std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
-        std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
-        bool _repeated_values = false;
-        struct Monomials{ //It stores a pair of monomials to perform the product on quotient rule on them and their subsequent arithmetic operations
-            bool subtract_monomials = false;
-            bool addition_or_subtraction;
-            std::string a;
-            std::string b;
-            std::string da;
-            std::string db;
-            char a_sign;
-            char b_sign;
-        };
-        struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
-            bool product_rule = false;
-            bool quotient_rule = false;
-            bool concatenated = false;
-            bool change_sign = false;
-            bool arithmetic = false;
-            bool negative_operation;
-            std::string sign;
-            std::vector<int> symbols; //Symbol indices
-            std::pair<int, std::tuple<std::string, std::string>> index_to_expressionp;
-            std::map<int, std::tuple<std::string, std::string>> index_to_expression;
-            std::string polynomial;
-            std::vector<int> parsed_polynomial;
-            std::string derivative_buffer;
-            Monomials monomials;
-        };
-        Polynomial polynomial;
-
-    public:
-
-        void detect_functions();
-        bool isNumber(char &number);
-        bool isSymbol(char &symbol);
-        bool initialise_classification(char symbol, int &index);
-        void set_index_to_symbols(char &symbol, int &index);
-        void insert_index_to_symbols();
-        void insert_index_to_function();
-        void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
-        void insert_symbol(char &symbol, int &index);
-        void fill_function_ranges();
-        void set_monomials(int &index, bool concatenated);
-        int perform_arithmetic(int a, int b);
-        std::string give_function(int &index);
-        std::vector<int> brackets_bag();
-        std::string product_rule(int &index, bool concatenated);
-        std::string quotient_rule(int &index, bool concatenated);
-        void find_scopes();
-        void find_functions_inside();
-        void fill_function_to_inside(std::tuple<int, int> &pivot);
-        void set_derivative_buffer(std::string &result);
-        void set_sign_arithmetic(int &result);
-        char parse_signs(char a_sign, char b_sign);
-        std::string differentiate_monomial(std::string &monomial, char &sign);
-        std::string differentiate_polynomial(int &sindex, int &eindex);
-        std::string differentiate();
-        std::string differentiate_function(std::string function);
-        std::string arithmetic(std::string &a, std::string &b, char &sign);
-        std::string mulMonomials(std::string &a, std::string &b);
-        std::string addMonomials(std::string &a, std::string &b, char &sign);
-        std::string subMonomials(std::string &a, std::string &b, char &sign);
-        bool hasExponent(const std::string & str);
-        bool isFunction(std::string &pfunction);
-        void function_parser();
-        void test1();
-        void test2();
-        void test3();
-        bool isProduct(int &index);
-        bool isQuotient(int &index);
-        void isRule(int &index);
-        bool isConcatenated();
-        void reset_polynomial(); //It resets the values of a polynomial object to false
-        derivative(std::string expression); //Copy constructor
-        derivative(derivative&&) = default; //Move constructor
-        derivative& operator = (const derivative&) & = default; //Move constructor
-        derivative& operator = (derivative&&) & = default; //Copy assignment operator
-        ~derivative(); //Destructor
+    
+    
+private:
+    
+    std::string _expression;
+    std::deque<std::tuple<int, int>> _function_ranges;
+    std::vector<std::string> _expressionarr;
+    std::vector<char> _symbols_stored;
+    bool _use_multimap = false;
+    std::vector<std::string> _functions;
+    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
+    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
+    std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
+    std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+    std::map<std::string, std::vector<int>> _function_to_rangem;
+    std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
+    std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
+    std::map<std::size_t, bool> _index_to_bracketsm;
+    std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
+    std::map<char,std::vector<int>> _symbols_classificationm;
+    std::pair<int , char> _index_to_symbolsp;
+    std::map<int, char> _index_to_symbolsm;
+    std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
+    std::map<int, std::string> _index_to_functionm;
+    std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
+    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
+    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
+    std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
+    std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
+    bool _repeated_values = false;
+    struct Monomials{ //It stores a pair of monomials to perform the product on quotient rule on them and their subsequent arithmetic operations
+        bool subtract_monomials = false;
+        bool addition_or_subtraction;
+        std::string a;
+        std::string b;
+        std::string da;
+        std::string db;
+        char a_sign;
+        char b_sign;
+    };
+    struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
+        bool product_rule = false;
+        bool quotient_rule = false;
+        bool concatenated = false;
+        bool change_sign = false;
+        bool arithmetic = false;
+        bool negative_operation;
+        std::string sign;
+        std::vector<int> symbols; //Symbol indices
+        std::pair<int, std::tuple<std::string, std::string>> index_to_expressionp;
+        std::map<int, std::tuple<std::string, std::string>> index_to_expression;
+        std::string polynomial;
+        std::vector<int> parsed_polynomial;
+        std::string derivative_buffer;
+        Monomials monomials;
+    };
+    Polynomial polynomial;
+    
+public:
+    
+    void detect_functions();
+    bool isNumber(char &number);
+    bool isSymbol(char &symbol);
+    bool initialise_classification(char symbol, int &index);
+    void set_index_to_symbols(char &symbol, int &index);
+    void insert_index_to_symbols();
+    void insert_index_to_function();
+    void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
+    void insert_symbol(char &symbol, int &index);
+    void fill_function_ranges();
+    void set_monomials(int &index, bool concatenated);
+    int perform_arithmetic(int a, int b);
+    std::string give_function(int &index);
+    std::vector<int> brackets_bag();
+    std::string product_rule(int &index, bool concatenated);
+    std::string quotient_rule(int &index, bool concatenated);
+    void find_scopes();
+    void find_functions_inside();
+    void fill_function_to_inside(std::tuple<int, int> &pivot);
+    void set_derivative_buffer(std::string &result);
+    void set_sign_arithmetic(int &result);
+    char parse_signs(char a_sign, char b_sign);
+    std::string differentiate_monomial(std::string &monomial, char &sign);
+    std::string differentiate_polynomial(int &sindex, int &eindex);
+    std::string differentiate();
+    std::string differentiate_function(std::string function);
+    std::string arithmetic(std::string &a, std::string &b);
+    std::string mulMonomials(std::string &a, std::string &b);
+    std::string addMonomials(std::string &a, std::string &b);
+    std::string subMonomials(std::string &a, std::string &b);
+    bool hasExponent(const std::string & str);
+    bool isFunction(std::string &pfunction);
+    void function_parser();
+    void test1();
+    void test2();
+    void test3();
+    bool isProduct(int &index);
+    bool isQuotient(int &index);
+    void isRule(int &index);
+    bool isConcatenated();
+    void reset_polynomial(); //It resets the values of a polynomial object to false
+    derivative(std::string expression); //Copy constructor
+    derivative(derivative&&) = default; //Move constructor
+    derivative& operator = (const derivative&) & = default; //Move constructor
+    derivative& operator = (derivative&&) & = default; //Copy assignment operator
+    ~derivative(); //Destructor
 };
 
 void derivative::detect_functions(){ //Refactoring needed
@@ -137,115 +137,115 @@ void derivative::detect_functions(){ //Refactoring needed
     std::string function;
     while(!done){
         for(int i = 0; i < _expression.size(); i++){
-
+            
             switch(_expression[i]){
-
+                    
                 case 'l' :  if(_expression[i + 1] == 'n'){
-                        function = "ln";
-                        _expressionarr.push_back(function);
-                        ln++;
-                    }
-                    else if(_expression[i + 1] == 'o'){
-                        function = "log";
-                        _expressionarr.push_back(function);
-                        log++;
-                    }
+                    function = "ln";
+                    _expressionarr.push_back(function);
+                    ln++;
+                }
+                else if(_expression[i + 1] == 'o'){
+                    function = "log";
+                    _expressionarr.push_back(function);
+                    log++;
+                }
                     break;
-
+                    
                 case 's' : if(_expression[i + 1] == 'i'){
-                        if(_expression[i - 3] == 'a')
-                            ;
-                        else {
-                            function = "sin";
-                            _expressionarr.push_back(function);
-                            sin++;
-                        }
-                    }
-                    else if(_expression[i - 2] == 'c'){
-                        if(_expression[i + 1] == 'e'){
-                            ;
-                        }
-                        else if(_expression[i - 1] == 'c'){
-                            function = "arcsin";
-                            _expressionarr.push_back(function);
-                            arcsin++;
-                        }
-                        else{
-                            function = "cos";
-                            _expressionarr.push_back(function);
-                            cos++;
-                        }
-                    }
-                    else if(_expression[i + 1] == 'e'){
-                        function = "sec";
+                    if(_expression[i - 3] == 'a')
+                        ;
+                    else {
+                        function = "sin";
                         _expressionarr.push_back(function);
-                        sec++;
+                        sin++;
                     }
+                }
+                else if(_expression[i - 2] == 'c'){
+                    if(_expression[i + 1] == 'e'){
+                        ;
+                    }
+                    else if(_expression[i - 1] == 'c'){
+                        function = "arcsin";
+                        _expressionarr.push_back(function);
+                        arcsin++;
+                    }
+                    else{
+                        function = "cos";
+                        _expressionarr.push_back(function);
+                        cos++;
+                    }
+                }
+                else if(_expression[i + 1] == 'e'){
+                    function = "sec";
+                    _expressionarr.push_back(function);
+                    sec++;
+                }
                     break;
-
+                    
                 case 'c' :  if(_expression[i + 1] == 'o'){
-                        if(_expression[i - 2] == 'a')
-                            ;
-                        else if(_expression[i + 3] == 'e'){
-                            function = "cosec";
-                            _expressionarr.push_back(function);
-                            cosec++;
-                        }
-                        else if(_expression[i + 2] == 's'){
-                            function = "cos";
-                            _expressionarr.push_back(function);
-                            cos++;
-                        }
+                    if(_expression[i - 2] == 'a')
+                        ;
+                    else if(_expression[i + 3] == 'e'){
+                        function = "cosec";
+                        _expressionarr.push_back(function);
+                        cosec++;
                     }
-                    else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                        ;
-                    else if(_expression[i - 1] == 'e')
-                        ;
-                    else
-                        ;
+                    else if(_expression[i + 2] == 's'){
+                        function = "cos";
+                        _expressionarr.push_back(function);
+                        cos++;
+                    }
+                }
+                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                    ;
+                else if(_expression[i - 1] == 'e')
+                    ;
+                else
+                    ;
                     break;
-
+                    
                 case 'a': switch(_expression[i+3]){
-
-                        case 'o':  function = "arcos";  _expressionarr.push_back(function); arcos++;
-                            break;
-
-                        case 's':   function = "arcsin"; _expressionarr.push_back(function); arcsin++;
-                            break;
-
-
-                        case 't':   function = "arctan";  _expressionarr.push_back(function); arctan++;
-                            break;
-                    }
+                        
+                    case 'o':  function = "arcos";  _expressionarr.push_back(function); arcos++;
+                        break;
+                        
+                    case 's':   function = "arcsin"; _expressionarr.push_back(function); arcsin++;
+                        break;
+                        
+                        
+                    case 't':   function = "arctan";  _expressionarr.push_back(function); arctan++;
+                        break;
+                }
                     break;
-
+                    
                 case 't':   if(_expression[i - 3] == 'a')
-                                ;
-                            else if(_expression[i - 2] == 'c'){
-                                function = "cotan";
-                                _expressionarr.push_back(function);
-                                cotan++;
-                                break;
-                            }
-                            else{
-                                function = "tan";
-                                _expressionarr.push_back(function);
-                                tan++;
-                                break;
-                            }
-                            break;
-
+                    ;
+                else if(_expression[i - 2] == 'c'){
+                    function = "cotan";
+                    _expressionarr.push_back(function);
+                    cotan++;
+                    break;
+                }
+                else{
+                    function = "tan";
+                    _expressionarr.push_back(function);
+                    tan++;
+                    break;
+                }
+                    break;
+                    
                 case 'e':   if(_expression[i - 1] == 's')
-                                ;
-                            else if(_expression[i - 3] == 'c')
-                                ;
-                            else{
-                                function = "e";
-                                _expressionarr.push_back(function);
-                                e++;
-                                break;
-                            }
-                            break;
+                    ;
+                else if(_expression[i - 3] == 'c')
+                    ;
+                else{
+                    function = "e";
+                    _expressionarr.push_back(function);
+                    e++;
+                    break;
+                }
+                    break;
                 default:
                     if(isspace(_expression[i]))
                         ;
@@ -384,17 +384,17 @@ void derivative::insert_index_to_symbols() {
 void derivative::insert_symbol(char &symbol, int &index) {
     set_index_to_symbols(symbol, index);
     switch(symbol){
-
+            
         case '+' : if(initialise_classification('+', index)); else _symbols_classificationm['+'].push_back(index); break;
-
+            
         case '-' : if(initialise_classification('-', index)); else _symbols_classificationm['-'].push_back(index); break;
-
+            
         case '*' : if(initialise_classification('*', index)); else _symbols_classificationm['*'].push_back(index); break;
-
+            
         case '/' : if(initialise_classification('/', index)); else _symbols_classificationm['/'].push_back(index); break;
-
+            
         default : ;
-
+            
     }
 }
 
@@ -547,6 +547,14 @@ void derivative::set_monomials(int &index, bool concatenated) {
     polynomial.monomials.db = std::get<1>(polynomial.index_to_expression[index + 1]);
     polynomial.monomials.b_sign = polynomial.monomials.db.back();
     polynomial.monomials.db.erase(polynomial.monomials.db.back());
+    if(polynomial.monomials.b_sign == '-' and polynomial.monomials.subtract_monomials)
+        polynomial.monomials.subtract_monomials = true;
+    else if(polynomial.monomials.b_sign == '-' and !polynomial.monomials.subtract_monomials)
+        polynomial.monomials.subtract_monomials = true;
+    else if(polynomial.monomials.b_sign == '+' and !polynomial.monomials.subtract_monomials)
+        polynomial.monomials.subtract_monomials = polynomial.monomials.subtract_monomials;
+    else
+        polynomial.monomials.subtract_monomials = false;
 }
 
 void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD){
@@ -562,7 +570,7 @@ std::string derivative::differentiate_monomial(std::string &monomial, char &sign
     int partition;
     if(monomial == "x") //We handle the case where we have x
         derivative = sign + 'x';
-        return derivative;
+    return derivative;
     for(int i = 0; i < monomial.size(); i++) {
         if (monomial[i] == '^') {
             partition = i;
@@ -576,7 +584,7 @@ std::string derivative::differentiate_monomial(std::string &monomial, char &sign
         if(monomial != "x"){
             if(exponent.front() == '2' and exponent.size() == 2) { //Nx^2
                 derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(
-                        monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
+                                                                                                       monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
                 derivative += 'x';
             }
             else{ //Nx^N
@@ -595,8 +603,8 @@ std::string derivative::differentiate_monomial(std::string &monomial, char &sign
                 derivative = derivative + '^' + exponent;
             }
         }
-    else //If exponent.back is not equal to '^' we simply have no exponent and therefore will have this case Nx
-        derivative = monomial.substr(0, monomial.size() - 1);
+        else //If exponent.back is not equal to '^' we simply have no exponent and therefore will have this case Nx
+            derivative = monomial.substr(0, monomial.size() - 1);
     return sign + derivative;
 }
 
@@ -680,22 +688,24 @@ char derivative::parse_signs(char a_sign, char b_sign){
 }
 
 std::string derivative::product_rule(int &index, bool concatenated) { //TODO get it to return the resulting sign as well!!!
-    char atoken; //We will use these tokens
-    char btoken; //for the program to know whether not the variables are numbers or monomials
     std::string result1;
     std::string result2; //We will need to perform two operations if both expressions are monomials
     std::string derivative;
     set_monomials(index, concatenated);
-    atoken = polynomial.monomials.a.front();
-    btoken = polynomial.monomials.b.front();
-    char sign;
+    char atoken = polynomial.monomials.a.front();
+    char btoken = polynomial.monomials.b.front();
     if(isNumber(atoken) and isNumber(btoken) and (!hasExponent(polynomial.monomials.a) and !hasExponent(polynomial.monomials.b))) //If both variables are numbers the derivative will be zero
         derivative = "null";
     else{
-        sign = parse_signs(polynomial.monomials.a_sign, polynomial.monomials.b_sign);
+        polynomial.sign = parse_signs(polynomial.monomials.a_sign, polynomial.monomials.b_sign);
         result1 = mulMonomials(polynomial.monomials.da, polynomial.monomials.b);
         result2 = mulMonomials(polynomial.monomials.db, polynomial.monomials.a);
-        derivative = addMonomials(result1, result2, sign);
+        if(result1 == "null")
+            derivative = result2;
+        else if(result2 == "null")
+            derivative = result1;
+        else
+            derivative = addMonomials(result1, result2);
     }
     return derivative;
 }
@@ -750,39 +760,32 @@ bool derivative::hasExponent(const std::string & str)
     return str.find(c) != std::string::npos;
 }
 
-std::string derivative::addMonomials(std::string &a, std::string &b, char &sign){
+std::string derivative::addMonomials(std::string &a, std::string &b){
     std::string result;
     polynomial.monomials.addition_or_subtraction = true;
-    result = arithmetic(a, b, sign);
-    polynomial.sign = 'null' ? result = 'null' : result = polynomial.sign + result;
+    result = arithmetic(a, b);
+    polynomial.sign = "null" ? result = "null" : result = polynomial.sign + result; //If the sign is null it means that the result of our operation was zero
     return result;
 }
 
-std::string derivative::subMonomials(std::string &a, std::string &b, char &sign) {
+std::string derivative::subMonomials(std::string &a, std::string &b) {
     std::string result;
     polynomial.monomials.addition_or_subtraction = false;
-    result = arithmetic(a, b, sign);
+    result = arithmetic(a, b);
     return result;
 }
 
 void derivative::set_sign_arithmetic(int &result) {
-    if(result < 0){
-        if(polynomial.change_sign){
-            polynomial.change_sign = polynomial.change_sign;
-        } else
-            polynomial.change_sign = !polynomial.change_sign;
-        polynomial.change_sign ? polynomial.sign = '-' : polynomial.sign = '+';
+    if(result < 0) {
+        if (polynomial.sign == '-') {
+            polynomial.sign == '+';
+        }
     }
-    else if(result > 0){
-        if(polynomial.change_sign){
-            polynomial.change_sign = polynomial.change_sign;
-        } else
-            polynomial.change_sign = !polynomial.change_sign;
-        polynomial.change_sign ? polynomial.sign = '-' : polynomial.sign = '+';
+    else if(result == 'null'){
+        polynomial.sign = "null";
     }
-    else{
-        polynomial.sign = 'null';
-    }
+    else
+        polynomial.sign = polynomial.sign;
 }
 
 int derivative::perform_arithmetic(int a_integer, int b_integer){
@@ -799,11 +802,11 @@ int derivative::perform_arithmetic(int a_integer, int b_integer){
 
 void derivative::set_derivative_buffer(std::string &result){
     if(!polynomial.monomials.addition_or_subtraction and !polynomial.arithmetic){
-
+        
     }
     else if(polynomial.monomials.addition_or_subtraction and !polynomial.arithmetic){
         if(polynomial.derivative_buffer.size() > 1){//If the previous monomials could not be added either, and this monomial cannot be added, the second monomial of the first polynomial and the first monomial of the second polynomial might be added
-
+            
         }
         else if(polynomial.derivative_buffer.size()){//If the previous monomial has been reduced to a single expression the previous monomial and the first monomial of the polynomial might be added
             ;
@@ -811,7 +814,7 @@ void derivative::set_derivative_buffer(std::string &result){
     }
 }
 
-std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) { //TODO when a and b cannot be summed, a suitable routine checking for the length of polynomial buffer must be created in case there are concatenated product rules
+std::string derivative::arithmetic(std::string &a, std::string &b) { //TODO when a and b cannot be summed, a suitable routine checking for the length of polynomial buffer must be created in case there are concatenated product rules
     std::string a_exponent;
     int a_integer;
     std::string b_exponent;
@@ -820,7 +823,7 @@ std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) {
     polynomial.arithmetic = true;
     std::string result;
     polynomial.negative_operation = false;
-    if(sign == '-')
+    if(polynomial.sign == '-')
         polynomial.negative_operation = true;
     if(hasExponent(a) and hasExponent(b)){ //If both monomials are raised to some power
         auto pos = a.find('^');
@@ -857,9 +860,6 @@ std::string derivative::arithmetic(std::string &a, std::string &b, char &sign) {
         result = polynomial.monomials.subtract_monomials ? a + '-' + b : a + '+' + b;
         polynomial.arithmetic = false;
     }
-    if(!polynomial.monomials.subtract_monomials and !arithmetic){
-        result = '-'+ result;
-    }
     set_derivative_buffer(result);
     return result;
 }
@@ -877,6 +877,8 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
     int result_exponent;
     int result_integer;
     std::string result;
+    if(a == "null" or b == "null")
+        return "null";
     if(hasExponent(a) and hasExponent(b)){ //3x^2 * 4x^2 will be equal to 12x^4
         pos = (int) a.find(exponent);
         posb = (int) b.find(exponent);
@@ -896,7 +898,7 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
         if(isNumber(b.front())) { // 3x^2 * 4
             b_integer = std::stoi(b);
             result = std::to_string(a_integer * b_integer) + a_exponent +
-                     std::to_string(a_exponentint); //is 12x^2
+            std::to_string(a_exponentint); //is 12x^2
         }
         else{ // 3x^2 * 4x
             b_integer = std::stoi(b.substr(0, b.size() - 1));
@@ -922,9 +924,9 @@ std::string derivative::mulMonomials(std::string &a, std::string &b) { //TODO If
         }
     }
     else if(isNumber(a.front())) { //4 * 3x
-            a_integer = std::stoi(a);
-            b_integer = std::stoi(b.substr(0, b.size() - 1));
-            result = std::to_string(a_integer * b_integer) + b.front();
+        a_integer = std::stoi(a);
+        b_integer = std::stoi(b.substr(0, b.size() - 1));
+        result = std::to_string(a_integer * b_integer) + b.front();
     }
     else if(!isNumber(b.front())){ //3x * 4x
         a_integer = std::stoi(a.substr(0, a.size() - 1));
@@ -1096,7 +1098,7 @@ void derivative::find_functions_inside() { //Refactoring needed
                     continue;
             }
             if(!inside){ //If function is not inside any function we have depth 0
-                 //If it is level 0 we can check its order without caring about other functions being stored previously
+                //If it is level 0 we can check its order without caring about other functions being stored previously
                 for(int i = 0; i < order_depth.size(); i++){
                     if(std::get<0>(order_depth[i]) == 0)
                         order = std::get<1>(order_depth[i]) + 1;
@@ -1183,7 +1185,7 @@ derivative::derivative(std::string expression){
 }
 
 derivative::~derivative(){
-
+    
 }
 
 std::string derivative::differentiate_function(std::string function) {
@@ -1205,7 +1207,7 @@ void autocalculus(){
 }
 
 int main(){
-
+    
     autocalculus();
     getchar();
     return 0;
