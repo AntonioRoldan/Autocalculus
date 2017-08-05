@@ -826,8 +826,7 @@ public:
     bool expression_is_function(char &expression);
     bool quotient_exists();
     std::string simplify_functions();
-    void set_sign(char &sign, int &count);
-    char get_sign(char &sign, int &count);
+    char set_sign(char &sign, int &count);
     void fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index);
     void differentiation();
     void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
@@ -1315,39 +1314,8 @@ void Argument::differentiation(){
     }
 }
 
-void Argument::set_sign(char &sign, int &count) {
-    if (argument.product_and_quotients_exist) {
-        if (count == 1)
-            sign = '*';
-        else if (count == 2)
-            sign = '/';
-        else if (count == 3)
-            sign = '+';
-        else if (count == 4)
-            sign = '-';
-    } else if (argument.product_exists) {
-        if (count == 1)
-            sign = '*';
-        else if (count == 2)
-            sign = '+';
-        else if (count == 3)
-            sign = '-';
-    } else if (argument.quotient_exists){
-        if (count == 1)
-            sign = '/';
-        else if (count == 2)
-            sign = '+';
-        else if (count == 3)
-            sign = '-';
-    } else{
-        if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-    }
-}
 
-char Argument::get_sign(char &sign, int &count) {
+char Argument::set_sign(char &sign, int &count) {
     if (argument.product_and_quotients_exist) {
         if (count == 1)
             sign = '*';
@@ -1404,51 +1372,51 @@ void Argument::fill_queues(int &count){
     std::deque<int> indices; //Indices where first element of the operation can be found
     char sign;
     if (argument.product_and_quotients_exist) {
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(products, indices, count, index);
         perform_differentiation(products, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(quotients, indices, count, index);
         perform_differentiation(quotients, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
     } else if (argument.product_exists) {
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(products, indices, count, index);
         perform_differentiation(products, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
     } else if (argument.quotient_exists){
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(products, indices, count, index);
         perform_differentiation(products, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
     } else{
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
         count += 1;
-        sign = get_sign(sign, count);
+        sign = set_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
     }
