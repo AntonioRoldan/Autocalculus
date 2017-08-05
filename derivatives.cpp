@@ -729,8 +729,6 @@ std::string derivative::differentiate_function(std::string function) {
 class Argument {
     
     
-    
-    
 private:
     
     bool _repeated_values;
@@ -752,6 +750,8 @@ private:
     std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _index_to_functionm;
     std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
+    std::pair<int, std::string> _index_to_resultp;
+    std::map<int, std::string> _index_to_result;
     struct Monomials{ //It stores a pair of monomials to perform the product on quotient rule on them and their subsequent arithmetic operations
         bool subtract_monomials = false;
         bool addition_or_subtraction;
@@ -775,9 +775,9 @@ private:
         bool negative_operation;
         bool aIsFunction;
         bool bIsFunction;
-        bool product_and_quotients_exist;
-        bool product_exists;
-        bool quotient_exists;
+        bool product_and_quotients_exist = false;
+        bool product_exists = false;
+        bool quotient_exists = false;
         std::string expression_a;
         std::string expression_b;
         std::vector<std::string> argument;
@@ -812,7 +812,6 @@ public:
     std::string addMonomials(std::string &a, std::string &b);
     std::string product_between_functions();
     char parse_signs(char a_sign, char b_sign);
-    void simplify_argument();
     bool isproduct_rule_functions(std::string &a_function, std::string &b_function);
     bool isFunction(std::string &pfunction);
     void parse_argument();
@@ -820,14 +819,19 @@ public:
     void parse_functions(std::string &a_coefficient,std::string &a_function, std::string &b_coefficient, std::string &b_function);
     void insert_index_to_function();
     void insert_index_to_expression(int &index, std::string &expression);
-    void set_argument_expressions();
+    bool isSign(char &sign);
     bool product_exists();
     bool isoperation_between_functions();
     std::tuple<std::string, std::string> get_coefficient_function(bool a_or_b);
-    bool parse_expressions();
+    bool expression_is_function(char &expression);
     bool quotient_exists();
     std::string simplify_functions();
-    std::string process_product();
+    void set_sign(char &sign, int &count);
+    char get_sign(char &sign, int &count);
+    void fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index);
+    void differentiation();
+    void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
+    void fill_queues(int &count);
     Argument(std::string &argument);
 };
 
@@ -1199,61 +1203,203 @@ std::string Argument::product_between_functions(){
     else return "shit";
 }
 
-bool isSign(char &sign){
+bool Argument::isSign(char &sign){
     if(sign == '+' or sign == '-' or sign == '*' or sign == '/')
         return true;
     else return false;
 }
 
-std::string Argument::process_product(){
-    typedef std::tuple<std::string, std::string> expressions_a_and_b;
-    int index;
-    std::string product;
-    std::deque<expressions_a_and_b> products;
-    std::deque<int> indices; //Indices where first element of the operation can be found
-    std::pair<int, std::string> index_to_resultp;
-    std::map<int, std::string> index_to_result;
+bool Argument::expression_is_function(char &expression){
+    if(expression == 's' or expression == 't' or expression == 'a' or expression == 'c' or expression == 'l' or expression == 'e'){
+        return true;
+    } else return false;
+}
+//3x + 2x - [(4sin(3x) * 7x) * (5 * 8x^2) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)
+// 6x - [(4cos(3x) * 7 + 7x * 4sin(3x)) * (40x^2) * (6sin(5x) + 3x * 2cos(5x)) * (20x^2) * (20x) * (63x)] //Also having, n product rules, the resulting expression is going to be splitted into n subexpressions with additions
+//If both are functions //Given a number of possible operations n, there will always be a certain number of possible product rules, and therefore possible expansions
+//3x + 2x - [(4sin(3x) * 7x) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
+
+void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign){
+    std::string result;
+    //Another while loop must be added here to allow for multiple simplifications, therefore we will also need to adjust the fill_operations_queue function,
+    //and create a function that sets the counter in accordance to the sign (set_counter(char &sign))
+    while(!operations.empty()){
+        argument.expression_a = std::get<0>(operations.front());
+        argument.expression_b = std::get<1>(operations.front());
+        operations.pop_front();
+        if(!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){
+            ;
+        } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //3sin(x) * 3cos(x)
+            if(isoperation_between_functions()){
+                result = product_between_functions();
+            }
+            else{ //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
+                ;
+            }
+        } else if(expression_is_function(argument.expression_a.back()) and expression_is_function(argument.expression_b.back())){//sin(x) * cos(x)
+            
+        } else if((expression_is_function(argument.expression_a.back()) and isNumber(argument.expression_b.back()))or(isNumber(argument.expression_a.back()) and expression_is_function(argument.expression_b.back()))){ //4x * 3sin(x) or 3sin(x) * 4x
+            
+        }
+        else if(!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))){ //Function times polynomial
+            ;
+        } else if((isNumber(argument.expression_a.back()) and !expression_is_function(argument.expression_a.back())) and !isNumber(argument.expression_b.back())){ //Polynomial times function
+            ;
+        }
+        _index_to_resultp.first = indices.front();//Now from all the pieces gathered in index to result we must filter out the ones that are not valid
+        _index_to_resultp.second = result;//We'll reunite the pieces to make up the derivative
+        _index_to_result.insert(_index_to_resultp);
+        indices.pop_front();
+    }
+}
+
+void Argument::differentiation(){
+    int count = 1;
+    if(product_exists() and quotient_exists()){
+        fill_queues(count);
+    } else if(quotient_exists()){
+        fill_queues(count);//process_quotient();
+    } else if(product_exists()) {
+        fill_queues(count);
+    } else{ //If we only have basic arithmetic operations between polynomials we simplify as much as we can
+        fill_queues(count);
+    }
+}
+
+void Argument::set_sign(char &sign, int &count) {
+    if (argument.product_and_quotients_exist) {
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '*';
+        else if (count == 4)
+            sign = '/';
+    } else if (argument.product_exists) {
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '*';
+    } else if (argument.quotient_exists){
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '/';
+    } else{
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+    }
+}
+
+char Argument::get_sign(char &sign, int &count) {
+    if (argument.product_and_quotients_exist) {
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '*';
+        else if (count == 4)
+            sign = '/';
+    } else if (argument.product_exists) {
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '*';
+    } else if (argument.quotient_exists){
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+        else if (count == 3)
+            sign = '/';
+    } else{
+        if (count == 1)
+            sign = '+';
+        else if (count == 2)
+            sign = '-';
+    }
+    return sign;
+}
+
+
+void Argument::fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index){
+    char sign;
+    set_sign(sign, count);
     for (int i = 0; i < argument.argument.size(); i++) {
-        if (argument.argument[i][0] == '*') {
+        if (argument.argument[i][0] == sign) {
             index = i - 1;
             indices.push_back(index);
-            products.push_back(std::make_tuple(argument.argument[i - 1], argument.argument[i + 1]));
+            operations.push_back(std::make_tuple(argument.argument[i - 1], argument.argument[i + 1]));
         }
         continue;
     }
-    while(!products.empty()){
-        argument.expression_a = std::get<0>(products.front());
-        argument.expression_b = std::get<1>(products.front());//3x + 2x - [(4sin(3x) * 7x) * (5 * 8x^2) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
-        products.pop_front();                                 //6x - [(4cos(3x) * 7 + 7x * 4sin(3x)) * (40x^2) * (6sin(5x) + 3x * 2cos(5x)) * (20x^2) * (20x) * (63x)] //Also having, n product rules, the resulting expression is going to be splitted into n subexpressions with additions
-        if(!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){ //If both are functions //Given a number of possible operations n, there will always be a certain number of possible product rules, and therefore possible expansions
-            if(argument.expression_a == argument.expression_b){//3x + 2x - [(4sin(3x) * 7x) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
-                ;//We multiply them
-            }
-            else{
-                ;//We compute the product rule
-            }
-        } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){
-            if(isoperation_between_functions()){
-                product = product_between_functions();
-                if(product == "Product rule")
-                    ;//TODO: Define product rule between functions here
-                else
-                    ;
-            }
-            else{ //else we have an operation between two polynomials which always results in a single expression
-                ;
-            }
-        } else if(!isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //Function times polynomial
-            ;
-        } else if(isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){ //Polynomial times function
-            ;
-        }
-        index_to_resultp.first = indices.front();
-        index_to_resultp.second = product;
-        index_to_result.insert(index_to_resultp);
-        indices.pop_front();
+}
+
+void Argument::fill_queues(int &count){
+    typedef std::tuple<std::string, std::string> expressions_a_and_b;
+    std::deque<expressions_a_and_b> additions;
+    std::deque<expressions_a_and_b> subtractions;
+    std::deque<expressions_a_and_b> products;
+    std::deque<expressions_a_and_b> quotients;
+    int index;
+    std::deque<int> indices; //Indices where first element of the operation can be found
+    char sign;
+    if (argument.product_and_quotients_exist) {
+        sign = get_sign(sign, count);
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(products, indices, count, index);
+        perform_differentiation(products, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(quotients, indices, count, index);
+        perform_differentiation(quotients, indices, sign);
+    } else if (argument.product_exists) {
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        sign = get_sign(sign, count);
+        count += 1;
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
+        sign = get_sign(sign, count);
+        count += 1;
+        fill_operations_queue(products, indices, count, index);
+        perform_differentiation(products, indices, sign);
+    } else if (argument.quotient_exists){
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        sign = get_sign(sign, count);
+        count += 1;
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
+        sign = get_sign(sign, count);
+        count += 1;
+        fill_operations_queue(quotients, indices, count, index);
+        perform_differentiation(quotients, indices, sign);
+    } else{
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        sign = get_sign(sign, count);
+        count += 1;
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
     }
-    return product;
 }
 
 bool Argument::product_exists(){
@@ -1262,7 +1408,6 @@ bool Argument::product_exists(){
         argument.product_exists = true;
         return true;
     } else {
-        argument.product_exists = false;
         return false;
     }
 }
@@ -1273,28 +1418,14 @@ bool Argument::quotient_exists(){
         argument.product_exists = true;
         return true;
     } else {
-        argument.product_exists = false;
         return false;
     }
 }
 
-void Argument::simplify_argument(){
-    //First we look for products
-    std::string simplification;
-    if(product_exists() and quotient_exists()){
-        ;
-    } else if(quotient_exists()){
-        //process_quotient();
-    } else if(product_exists()) {
-        simplification = process_product();
-    } else{ //If we only have basic arithmetic operations between polynomials we simplify as much as we can
-        ;
-    }
-}
 
 std::string Argument::differentiate() {
     parse_argument(); //It stores an index with its corresponding expression in a map
-    return "shit";
+    differentiation();
 }
 
 std::string Argument::differentiate_monomial(std::string &monomial, char &sign){
