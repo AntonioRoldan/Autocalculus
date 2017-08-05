@@ -832,6 +832,9 @@ public:
     void differentiation();
     void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
     void fill_queues(int &count);
+    bool isNumberBefore(int &index);
+    bool isFunctionAfter(int &index);
+    void parse_number_times_function(int &index, bool &numberattachedtofunction, std::string &numbertimesfunction, std::string function, std::string &result);
     Argument(std::string &argument);
 };
 
@@ -852,6 +855,27 @@ bool Argument::isSymbol(std::string symbol) {
     }
 }
 
+bool Argument::isNumberBefore(int &index){
+    if(isnumber(_argument[index - 1]))
+        return true;
+    else return false;
+}
+
+bool Argument::isFunctionAfter(int &index){
+    if(expression_is_function(_argument[index + 1]))
+        return true;
+    else return false;
+}
+
+void Argument::parse_number_times_function(int &index, bool &numberattachedtofunction, std::string &numbertimesfunction, std::string function, std::string &result){
+    if(isNumberBefore(index) and numberattachedtofunction){
+        result = numbertimesfunction + function;
+    } else
+        result = function;
+    numberattachedtofunction = false;
+    std::cout<<result<<std::endl;
+}
+
 void Argument::detect_functions() { //Refactoring needed
     int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
     std::string exponent;
@@ -860,10 +884,12 @@ void Argument::detect_functions() { //Refactoring needed
     bool integer_raised = false;
     bool done = false;
     bool previous_number;
+    bool numberattachedtofunction = false;
     std::string number;
     std::string function;
+    std::string numbertimesfunction;
     while (!done) {
-        for (int i = 0; i < _argument.size(); i++) {
+        for (int i = 0; i <= _argument.size(); i++) {
             
             switch (_argument[i]) {
                     
@@ -986,7 +1012,8 @@ void Argument::detect_functions() { //Refactoring needed
                             number += _argument[i];
                         else
                             exponent += _argument[i];
-                    } else if (!isNumber(_argument[i]) and previous_number) {
+                    }
+                    else if (!isNumber(_argument[i]) and previous_number) {
                         if (_argument[i] == '^') {
                             if (_argument[i - 1] == 'x' or
                                 _argument[i - 1] == 'y') {//If it is a polynomial raised to some power
@@ -1007,7 +1034,8 @@ void Argument::detect_functions() { //Refactoring needed
                             _argumentarr.push_back(number);
                             exponent.clear();
                             polynomial_raised = false;
-                        } else {
+                        }
+                        else {
                             previous_number = false;
                             _argumentarr.push_back(number);
                             number.clear();
@@ -1032,10 +1060,10 @@ void Argument::detect_functions() { //Refactoring needed
             _symbols_classificationm.clear();
         }
     }
-    for (int i = 0; i < _argumentarr.size(); i++) {
-        std::cout << _argumentarr[i] << std::endl;
-    }
     insert_index_to_function();
+    //for (int i = 0; i < _argumentarr.size(); i++) {
+    //std::cout << _argumentarr[i] << std::endl;
+    //}
 }
 
 void Argument::insert_index_to_function(){
@@ -1064,15 +1092,18 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
     for(int i = 0; i < _argumentarr.size(); i++){
         //We prepare a map, mapping indices to expressions
         if(_argumentarr[i] == "(" or _argumentarr[i] == ")"){
-            ;
+            if(_argumentarr[i] == "(")
+                catch_argument = true;
+            else
+                ;
         }
         else if(isFunction(_argumentarr[i])) {
             function = _argumentarr[i] + "(" + ")";
-            catch_argument = true;
+            std::cout<<"Function: "<<function<<std::endl;
         }
         else if(!isSymbol(_argumentarr[i]) and !isFunction(_argumentarr[i]) and catch_argument){
             std::string monomial_inside = _argumentarr[i];
-            std::cout<<monomial_inside<<std::endl;
+            std::cout<<"Monomial inside: "<<monomial_inside<<std::endl;
             auto starting_brackets = function.find(")");
             function.insert(starting_brackets, monomial_inside); //We insert the argument
             insert_index_to_expression(index, function);
@@ -1081,11 +1112,13 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
         }
         else if(!isSymbol(_argumentarr[i]) and !isFunction(_argumentarr[i]) and !catch_argument) {
             monomial = _argumentarr[i];
+            std::cout<<"Monomial: "<<monomial<<std::endl;
             insert_index_to_expression(index, monomial);
             index += 1;
         }
         else if(isSymbol(_argumentarr[i])){
             symbol = _argumentarr[i];
+            std::cout<<"Symbol: "<<symbol<<std::endl;
             insert_index_to_expression(index, symbol);
             index += 1;
         }
@@ -1194,6 +1227,7 @@ std::string Argument::simplify_functions() { //TODO: Calculate product rule inst
     return function_simplifiation;
 }
 
+
 std::string Argument::product_between_functions(){
     std::string product_functions;
     product_functions = simplify_functions();
@@ -1228,23 +1262,37 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
         argument.expression_b = std::get<1>(operations.front());
         operations.pop_front();
         if(!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){
-            ;
+            std::cout<<"Functions times function"<<std::endl;
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;;
         } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //3sin(x) * 3cos(x)
-            if(isoperation_between_functions()){
-                result = product_between_functions();
-            }
-            else{ //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
-                ;
-            }
+            //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
+            std::cout<<"Operation between polynomials"<<std::endl; //Add monomials, subtract monomials and mulMonomials here
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;
         } else if(expression_is_function(argument.expression_a.back()) and expression_is_function(argument.expression_b.back())){//sin(x) * cos(x)
-            
+            std::cout<<"Functions operation"<<std::endl;
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;
         } else if((expression_is_function(argument.expression_a.back()) and isNumber(argument.expression_b.back()))or(isNumber(argument.expression_a.back()) and expression_is_function(argument.expression_b.back()))){ //4x * 3sin(x) or 3sin(x) * 4x
-            
+            std::cout<<"Function with integer times polynomial"<<std::endl;
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;
         }
         else if(!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))){ //Function times polynomial
-            ;
+            std::cout<<"Function times polynomial"<<std::endl;
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;
         } else if((isNumber(argument.expression_a.back()) and !expression_is_function(argument.expression_a.back())) and !isNumber(argument.expression_b.back())){ //Polynomial times function
-            ;
+            std::cout<<"Polynomial times function"<<std::endl;
+            std::cout<<argument.expression_a<<std::endl;
+            std::cout<<argument.expression_b<<std::endl;
+            std::cout<<sign<<std::endl;
         }
         _index_to_resultp.first = indices.front();//Now from all the pieces gathered in index to result we must filter out the ones that are not valid
         _index_to_resultp.second = result;//We'll reunite the pieces to make up the derivative
@@ -1256,6 +1304,7 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
 void Argument::differentiation(){
     int count = 1;
     if(product_exists() and quotient_exists()){
+        argument.product_and_quotients_exist = true;
         fill_queues(count);
     } else if(quotient_exists()){
         fill_queues(count);//process_quotient();
@@ -1269,27 +1318,27 @@ void Argument::differentiation(){
 void Argument::set_sign(char &sign, int &count) {
     if (argument.product_and_quotients_exist) {
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '*';
-        else if (count == 4)
+        else if (count == 2)
             sign = '/';
+        else if (count == 3)
+            sign = '+';
+        else if (count == 4)
+            sign = '-';
     } else if (argument.product_exists) {
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '*';
+        else if (count == 2)
+            sign = '+';
+        else if (count == 3)
+            sign = '-';
     } else if (argument.quotient_exists){
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '/';
+        else if (count == 2)
+            sign = '+';
+        else if (count == 3)
+            sign = '-';
     } else{
         if (count == 1)
             sign = '+';
@@ -1301,27 +1350,27 @@ void Argument::set_sign(char &sign, int &count) {
 char Argument::get_sign(char &sign, int &count) {
     if (argument.product_and_quotients_exist) {
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '*';
-        else if (count == 4)
+        else if (count == 2)
             sign = '/';
+        else if (count == 3)
+            sign = '+';
+        else if (count == 4)
+            sign = '-';
     } else if (argument.product_exists) {
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '*';
+        else if (count == 2)
+            sign = '+';
+        else if (count == 3)
+            sign = '-';
     } else if (argument.quotient_exists){
         if (count == 1)
-            sign = '+';
-        else if (count == 2)
-            sign = '-';
-        else if (count == 3)
             sign = '/';
+        else if (count == 2)
+            sign = '+';
+        else if (count == 3)
+            sign = '-';
     } else{
         if (count == 1)
             sign = '+';
@@ -1356,47 +1405,50 @@ void Argument::fill_queues(int &count){
     char sign;
     if (argument.product_and_quotients_exist) {
         sign = get_sign(sign, count);
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
-        count += 1;
-        sign = get_sign(sign, count);
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
-        count += 1;
-        sign = get_sign(sign, count);
         fill_operations_queue(products, indices, count, index);
         perform_differentiation(products, indices, sign);
         count += 1;
         sign = get_sign(sign, count);
         fill_operations_queue(quotients, indices, count, index);
         perform_differentiation(quotients, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
     } else if (argument.product_exists) {
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
         sign = get_sign(sign, count);
-        count += 1;
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
-        sign = get_sign(sign, count);
-        count += 1;
         fill_operations_queue(products, indices, count, index);
         perform_differentiation(products, indices, sign);
-    } else if (argument.quotient_exists){
+        count += 1;
+        sign = get_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
-        sign = get_sign(sign, count);
         count += 1;
+        sign = get_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
+    } else if (argument.quotient_exists){
         sign = get_sign(sign, count);
+        fill_operations_queue(products, indices, count, index);
+        perform_differentiation(products, indices, sign);
         count += 1;
-        fill_operations_queue(quotients, indices, count, index);
-        perform_differentiation(quotients, indices, sign);
-    } else{
+        sign = get_sign(sign, count);
         fill_operations_queue(additions, indices, count, index);
         perform_differentiation(additions, indices, sign);
-        sign = get_sign(sign, count);
         count += 1;
+        sign = get_sign(sign, count);
+        fill_operations_queue(subtractions, indices, count, index);
+        perform_differentiation(subtractions, indices, sign);
+    } else{
+        sign = get_sign(sign, count);
+        fill_operations_queue(additions, indices, count, index);
+        perform_differentiation(additions, indices, sign);
+        count += 1;
+        sign = get_sign(sign, count);
         fill_operations_queue(subtractions, indices, count, index);
         perform_differentiation(subtractions, indices, sign);
     }
@@ -1719,7 +1771,7 @@ Argument::Argument(std::string &argument){
 
 
 void test_argument(){
-    std::string expression = "sin(2x^4) - 3x * 7x + tan(x)";
+    std::string expression = "3x + 2x - sin(3x) * 7x * 5 * 8x^2 * 3x * 4 * cos(5x) * 3 * sin(2x) * 5x * 4x * 5 * 7x * 9";
     Argument argument = Argument(expression);
     std::cout<<argument.differentiate()<<std::endl;
 }
