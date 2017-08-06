@@ -69,8 +69,10 @@ public:
     std::string differentiate_argument(int &SB, int &EB, bool is_polynomial);
     std::string differentiate();
     std::string differentiate_function(std::string function);
+    void process_previous_function(std::vector<int> &func_occur, std::string &function, std::string &previous_function, int &occurrences);
     bool isFunction(std::string &pfunction);
     void function_parser();
+    void fill_occur_vector(std::vector<int> &func_occur, int &log, int &ln, int &sin, int &cos, int &tan, int &sec, int &cosec, int &cotan, int &arcsin, int &arcos, int &arctan, int &e);
     void test1();
     void test2();
     void test3();
@@ -81,8 +83,54 @@ public:
     ~derivative(); //Destructor
 };
 
+void derivative::process_previous_function(std::vector<int> &func_occur, std::string &function, std::string &previous_function, int &occurrences){
+    _expressionarr.push_back(function);
+    if(previous_function == "sin"){
+        func_occur[2];
+    } else if(previous_function == "cos"){
+        func_occur[3]++;
+    } else if(previous_function == "tan"){
+        func_occur[4]++;
+    } else if(previous_function == "arcsin"){
+        func_occur[8]++;
+    } else if(previous_function == "arcos"){
+        func_occur[9]++;
+    } else if(previous_function == "arctan"){
+        func_occur[10]++;
+    } else if(previous_function == "sec"){
+        func_occur[5]++;
+    } else if(previous_function == "cosec"){
+        func_occur[6]++;
+    } else if(previous_function == "cotan"){
+        func_occur[7]++;
+    } else if(previous_function == "ln"){
+        func_occur[1]++;
+    } else if(previous_function == "log"){
+        func_occur[0]++;
+    } else if(previous_function == "e"){
+        func_occur[11]++;
+    }
+}
+
+void derivative::fill_occur_vector(std::vector<int> &func_occur, int &log, int &ln, int &sin, int &cos, int &tan, int &sec, int &cosec, int &cotan, int &arcsin, int &arcos, int &arctan, int &e){
+    func_occur.push_back(log);
+    func_occur.push_back(ln);
+    func_occur.push_back(sin);
+    func_occur.push_back(cos);
+    func_occur.push_back(tan);
+    func_occur.push_back(sec);
+    func_occur.push_back(cosec);
+    func_occur.push_back(cotan);
+    func_occur.push_back(arcsin);
+    func_occur.push_back(arcos);
+    func_occur.push_back(arctan);
+    func_occur.push_back(e);
+}
+
 void derivative::detect_functions(){ //Refactoring needed
     int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
+    std::vector<int> func_occur;
+    fill_occur_vector(func_occur, log, ln, sin, cos, tan, sec, cosec, cotan, arcsin, arcos, arctan, e);
     std::string exponent;
     bool catch_exponent = false;
     bool polynomial_raised = false;
@@ -91,6 +139,7 @@ void derivative::detect_functions(){ //Refactoring needed
     bool previous_number;
     std::string number;
     std::string function;
+    std::string previous_function;
     while(!done){
         for(int i = 0; i < _expression.size(); i++){
             
@@ -98,21 +147,29 @@ void derivative::detect_functions(){ //Refactoring needed
                     
                 case 'l' :  if(_expression[i + 1] == 'n'){
                     function = "ln";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     ln++;
                 }
                 else if(_expression[i + 1] == 'o'){
                     function = "log";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     log++;
                 }
                     break;
                     
                 case 's' : if(_expression[i + 1] == 'i'){
-                    if(_expression[i - 3] == 'a')
+                    if(_expression[i - 3] == 'a' and _expression[i-4] == 't') {
+                        function = "sin";
+                        _expressionarr.push_back(function);
+                        tan++;
+                    }
+                    else if(_expression[i - 3] == 'a')
                         ;
                     else {
                         function = "sin";
+                        previous_function = function;
                         _expressionarr.push_back(function);
                         sin++;
                     }
@@ -123,32 +180,42 @@ void derivative::detect_functions(){ //Refactoring needed
                     }
                     else if(_expression[i - 1] == 'c'){
                         function = "arcsin";
+                        previous_function = function;
                         _expressionarr.push_back(function);
                         arcsin++;
                     }
                     else{
                         function = "cos";
+                        previous_function = function;
                         _expressionarr.push_back(function);
                         cos++;
                     }
                 }
                 else if(_expression[i + 1] == 'e'){
                     function = "sec";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     sec++;
                 }
                     break;
                     
                 case 'c' :  if(_expression[i + 1] == 'o'){
-                    if(_expression[i - 2] == 'a')
+                    if(_expression[i - 2] == 'a' and _expression[i-3] == 't') {
+                        function = "tan";
+                        previous_function = function;
+                        _expressionarr.push_back(function);
+                        tan++;
+                    } else if(_expression[i - 2] == 'a')
                         ;
                     else if(_expression[i + 3] == 'e'){
                         function = "cosec";
+                        previous_function = function;
                         _expressionarr.push_back(function);
                         cosec++;
                     }
                     else if(_expression[i + 2] == 's'){
                         function = "cos";
+                        previous_function = function;
                         _expressionarr.push_back(function);
                         cos++;
                     }
@@ -163,14 +230,14 @@ void derivative::detect_functions(){ //Refactoring needed
                     
                 case 'a': switch(_expression[i+3]){
                         
-                    case 'o':  function = "arcos";  _expressionarr.push_back(function); arcos++;
+                    case 'o':  if(_expression[i - 1] == 't'); else{function = "arcos"; previous_function = function; _expressionarr.push_back(function); arcos++;};
                         break;
                         
-                    case 's':   function = "arcsin"; _expressionarr.push_back(function); arcsin++;
+                    case 's':   if(_expression[i - 1] == 't'); else{function = "arcsin"; previous_function = function; _expressionarr.push_back(function); arcsin++;};
                         break;
                         
                         
-                    case 't':   function = "arctan";  _expressionarr.push_back(function); arctan++;
+                    case 't':   if(_expression[i - 1] == 't'); else{function = "arctan"; previous_function = function; _expressionarr.push_back(function); arctan++;};
                         break;
                 }
                     break;
@@ -179,12 +246,21 @@ void derivative::detect_functions(){ //Refactoring needed
                     ;
                 else if(_expression[i - 2] == 'c'){
                     function = "cotan";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     cotan++;
                     break;
                 }
+                else if(_expression[i - 4] == 's'){
+                    function =  "tan";
+                    previous_function = function;
+                    _expressionarr.push_back(function);
+                    sin++;
+                    break;
+                }
                 else{
                     function = "tan";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     tan++;
                     break;
@@ -197,6 +273,7 @@ void derivative::detect_functions(){ //Refactoring needed
                     ;
                 else{
                     function = "e";
+                    previous_function = function;
                     _expressionarr.push_back(function);
                     e++;
                     break;
@@ -259,15 +336,14 @@ void derivative::detect_functions(){ //Refactoring needed
                     }
             }
         }
-        if(ln >= 2 or log >= 2 or sin >= 2 or cos >= 2 or tan >= 2 or sec >= 2 or cosec >= 2 or cotan >= 2 or arcsin >= 2 or arcos >= 2 or arctan >= 2 or e >= 2){
+        if(ln > 1 or log > 1 or sin > 1 or cos > 1 or tan > 1 or sec > 1 or cosec > 1 or cotan > 1 or arcsin > 1 or arcos > 1 or arctan > 1 or e > 1){
             _repeated_values = true;
         }
-        if(!_repeated_values)
-            done = true;
-        else if(_use_multimap)
+        if(_use_multimap)
             done = true;
         else{
-            _use_multimap = true; //We make do another set of iterations
+            _repeated_values = true;
+            _use_multimap = true;
             _expressionarr.clear();
             _index_to_bracketsm.clear();
             _symbols_classificationm.clear();
@@ -462,6 +538,7 @@ void derivative::find_scopes(){
                 arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
                 arguments_range.push_back(brackets_positions[i - 1]); //We push the position for starting brackets
                 _function_to_rangep.first = give_function(brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
+                std::cout<<give_function(brackets_positions[i])<<std::endl;
                 _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
                 if(!_repeated_values) //We store in a map
                     _function_to_rangem.insert(_function_to_rangep);
@@ -872,7 +949,7 @@ void Argument::detect_functions() { //Refactoring needed
                     
                 case 's' :
                     if (_argument[i + 1] == 'i') {
-                        if (_argument[i - 3] == 'a');
+                        if (_argument[i - 3] == 'a' and _argument[i - 4] != 't');
                         else {
                             function = "sin";
                             _argumentarr.push_back(function);
@@ -881,6 +958,7 @@ void Argument::detect_functions() { //Refactoring needed
                     } else if (_argument[i - 2] == 'c') {
                         if (_argument[i + 1] == 'e') { ;
                         } else if (_argument[i - 1] == 'c') {
+                            std::cout<<"joder"<<std::endl;
                             function = "arcsin";
                             _argumentarr.push_back(function);
                             arcsin++;
@@ -924,6 +1002,7 @@ void Argument::detect_functions() { //Refactoring needed
                             break;
                             
                         case 's':
+                            std::cout<<"joder"<<std::endl;
                             function = "arcsin";
                             _argumentarr.push_back(function);
                             arcsin++;
@@ -1000,14 +1079,14 @@ void Argument::detect_functions() { //Refactoring needed
                             exponent.clear();
                             polynomial_raised = false;
                         }
-                        else {
+                        else if(_argument[i] == '(' or _argument[i] == ')' or _argument[i] == '+' or _argument[i] == '-' or _argument[i] == '*' or _argument[i] == '/'){
+                            _argumentarr.push_back(std::string(1, _argument[i]));
+                        } else{
                             previous_number = false;
                             _argumentarr.push_back(number);
                             number.clear();
                         }
                     }
-                    if(_argument[i] == '(' or _argument[i] == ')' or _argument[i] == '+' or _argument[i] == '-' or _argument[i] == '*' or _argument[i] == '/')
-                        _argumentarr.push_back(std::string(1, _argument[i]));
             }
         }
         if (ln >= 2 or log >= 2 or sin >= 2 or cos >= 2 or tan >= 2 or sec >= 2 or cosec >= 2 or cotan >= 2 or
@@ -1704,8 +1783,10 @@ Argument::Argument(std::string &argument){
 }
 
 
+
+
 void test_argument(){
-    std::string expression = "3x + 2x - sin(3x) * 7x * 5 * 8x^2 * 3x * 4 * cos(5x) * 3 * sin(2x) * 5x * 4x * 5 * 7x * 9";
+    std::string expression = "sin(3x - 2x)";
     Argument argument = Argument(expression);
     std::cout<<argument.differentiate()<<std::endl;
 }
@@ -1726,7 +1807,7 @@ void autocalculus(){
 
 int main(){
     
-    test_argument();
+    autocalculus();
     getchar();
     return 0;
 }
