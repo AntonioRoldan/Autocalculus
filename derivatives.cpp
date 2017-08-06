@@ -47,37 +47,6 @@ private:
     std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
     std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
     bool _repeated_values = false;
-    struct Monomials{ //It stores a pair of monomials to perform the product on quotient rule on them and their subsequent arithmetic operations
-        bool subtract_monomials = false;
-        bool addition_or_subtraction;
-        bool equivalent_exponentiation;
-        bool exponents_discrepancy;
-        bool both_integers;
-        bool non_exponentiated_monomials;
-        std::string a;
-        std::string b;
-        std::string da;
-        std::string db;
-        std::string a_sign;
-        std::string b_sign;
-    };
-    struct Polynomial{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
-        bool product_rule = false;
-        bool quotient_rule = false;
-        bool concatenated = false;
-        bool change_sign = false;
-        bool arithmetic = false;
-        bool negative_operation;
-        std::string sign;
-        std::vector<int> symbols; //Symbol indices
-        std::pair<int, std::tuple<std::string, std::string>> index_to_expressionp;
-        std::map<int, std::tuple<std::string, std::string>> index_to_expression;
-        std::string polynomial;
-        std::vector<int> parsed_polynomial;
-        std::string derivative_buffer;
-        Monomials monomials;
-    };
-    Polynomial polynomial;
     
     
 public:
@@ -738,9 +707,6 @@ private:
     std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
     std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
     std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
-    std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-    std::map<std::string, std::vector<int>> _function_to_rangem;
-    std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
     std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
     std::map<std::size_t, bool> _index_to_bracketsm;
     std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
