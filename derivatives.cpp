@@ -1,15 +1,9 @@
 #include <iostream>
-#include <string>
-#include <cstdlib>
 #include <map>
 #include <array>
 #include <vector>
 #include <set>
-#include <algorithm>
 #include <boost/algorithm/string/find.hpp>
-#include <tuple>
-#include <cctype>
-#include <math.h>
 #include<cmath>
 #include <numeric>
 #include<deque>
@@ -778,7 +772,7 @@ public:
     void parse_argument();
     void insert_index_to_function();
     std::string get_exponent(std::string &monomial);
-    void collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations);
+    void collect_exponents(bool &add_or_sub, char &sign, std::deque<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations);
     void insert_index_to_expression(int &index, std::string &expression);
     bool product_exists();
     bool expression_is_function(char &expression);
@@ -789,6 +783,8 @@ public:
     void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
     void fill_queues(int &count);
     void reset_operation_kind();
+    void assign_ab(std::deque<std::tuple<std::string, std::string>> &operations);
+    std::vector<std::string> gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations);
     Argument(std::string &argument);
 };
 
@@ -832,7 +828,7 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
     std::string symbol;
     int index = 0;
     Parser parse = Parser(_argument);
-    _argumentarr= parse.detect_functions();
+    _argumentarr = parse.detect_functions();
     _use_multimap = true;
     insert_index_to_function();
     for(int i = 0; i < _argumentarr.size(); i++){
@@ -841,7 +837,7 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
             if(_argumentarr[i] == "(")
                 catch_argument = true;
             else
-                ;
+                catch_argument = false;
         }
         else if(isFunction(_argumentarr[i])) {
             function = _argumentarr[i] + "(" + ")";
@@ -854,7 +850,6 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
             function.insert(starting_brackets, monomial_inside); //We insert the argument
             insert_index_to_expression(index, function);
             index += 1;
-            catch_argument = false;
         }
         else if(!isSymbol(_argumentarr[i]) and !isFunction(_argumentarr[i]) and !catch_argument) {
             monomial = _argumentarr[i];
@@ -884,7 +879,6 @@ void Argument::insert_index_to_expression(int &index, std::string &expression){
 }
 
 
-
 bool Argument::expression_is_function(char &expression){
     if(expression == 's' or expression == 't' or expression == 'a' or expression == 'c' or expression == 'l' or expression == 'e'){
         return true;
@@ -894,7 +888,6 @@ bool Argument::expression_is_function(char &expression){
 // 6x - [(4cos(3x) * 7 + 7x * 4sin(3x)) * (40x^2) * (6sin(5x) + 3x * 2cos(5x)) * (20x^2) * (20x) * (63x)] //Also having, n product rules, the resulting expression is going to be splitted into n subexpressions with additions
 //If both are functions //Given a number of possible operations n, there will always be a certain number of possible product rules, and therefore possible expansions
 //3x + 2x - [(4sin(3x) * 7x) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
-
 
 
 std::string Argument::operate(char &sign) {
@@ -928,18 +921,15 @@ std::string Argument::operate(char &sign) {
         } else if(argument.polynommial_on_polynomial) {
             addMonomials(argument.expression_a, argument.expression_b);
         }
+    } else if(argument.function_on_function) {
+        ;
+    } else if(argument.function_on_polynomial) {
+        ;
+    } else if(argument.polynomial_on_function) {
+        ;
     } else {
-        if(argument.function_on_function) {
-            ;
-        } else if(argument.function_on_polynomial) {
-            ;
-        } else if(argument.polynomial_on_function) {
-            ;
-        } else if(argument.polynommial_on_polynomial) {
-            subMonomials(argument.expression_a, argument.expression_b);
-        }
+        subMonomials(argument.expression_a, argument.expression_b);
     }
-    
 }
 
 void Argument::reset_operation_kind(){
@@ -960,7 +950,7 @@ std::string Argument::get_exponent(std::string &monomial){
     return exponent;
 }
 
-void Argument::collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations){
+void Argument::collect_exponents(bool &add_or_sub, char &sign, std::deque<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations){
     std::string exponent;
     if(sign == '+' or sign == '-'){
         add_or_sub = true;
@@ -974,18 +964,53 @@ void Argument::collect_exponents(bool &add_or_sub, char &sign, std::vector<std::
     std::unique(exponents.begin(), exponents.end());
 }
 
+void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &operations){
+    argument.expression_a = std::get<0>(operations.front());
+    argument.expression_b = std::get<1>(operations.front());
+    operations.pop_front();
+}
+
+std::vector<std::string> Argument::gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations){
+    int count;
+    std::string exponent;
+    std::vector<std::string> common_exponents;
+    typedef std::tuple<std::string, std::string> a_and_b;
+    for(a_and_b ab : operations){
+        exponent = get_exponent(std::get<0>(ab));
+        count += 1;
+        if(exponent== exponent_pivot){
+            common_exponents.push_back(std::get<0>(ab));
+        } else if(operations.size() == count){
+            exponent = get_exponent(std::get<1>(ab));
+            if(exponent == exponent_pivot)
+                common_exponents.push_back(std::get<1>(ab));
+        }
+    } //TODO: Test this
+    return common_exponents;
+}
+//Algorithm example for x as an exponent
+//3x + 2x^2 + 4x - 5x^2 - 6x + 3x + x
+//(3x,2x^2), (2x^2, 4x), (6x, 3x), (3x, x)
+//3x + 4x
 void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign){
     std::string result;
-    std::vector<std::string> exponents; //Vector containing all variables attached to coefficients, it will help the program know the different exponents there are
+    std::deque<std::string> exponents; //Vector containing all variables attached to coefficients, it will help the program know the different exponents there are
+    std::vector<std::string> exponents_already_processed;
+    std::vector<std::string> common_exponents;
+    std::string exponent_pivot;
     bool add_or_sub = false;
     //Another while loop must be added here to allow for multiple simplifications, therefore we will also need to adjust the fill_operations_queue function,
     //and create a function that sets the counter in accordance to the sign (set_counter(char &sign))
     collect_exponents(add_or_sub, sign, exponents, operations);
     while(!operations.empty()){
         reset_operation_kind();
-        argument.expression_a = std::get<0>(operations.front());
-        argument.expression_b = std::get<1>(operations.front());
-        operations.pop_front();
+        if(add_or_sub){
+            exponent_pivot = exponents.front();
+            common_exponents = gather_up_common_exponents(exponent_pivot, operations);
+        }
+        else {
+            assign_ab(operations);
+        }
         if(!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){
             std::cout<<"Functions times function"<<std::endl;
             std::cout<<argument.expression_a<<std::endl;
