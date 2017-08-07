@@ -714,19 +714,15 @@ private:
     struct argument{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
         bool product_rule;
         bool quotient_rule;
-        bool concatenated;
-        bool change_sign;
-        bool arithmetic;
-        bool negative_operation;
-        bool aIsFunction;
-        bool bIsFunction;
         bool product_and_quotients_exist = false;
         bool product_exists = false;
         bool quotient_exists = false;
-        bool addition_or_subtraction;
-        bool subtract_monomials = false;
+        bool polynommial_on_polynomial = false;
+        bool polynomial_on_function = false;
+        bool function_on_polynomial = false;
+        bool function_on_function = false;
+        bool addition_or_subtraction = false;
         bool equivalent_exponentiation;
-        bool exponents_discrepancy;
         bool both_integers;
         bool non_exponentiated_monomials;
         std::string expression_a;
@@ -746,7 +742,7 @@ public:
     bool isNumber(char &number);
     bool isSymbol(std::string symbol);
     std::string differentiate();
-    std::string differentiate_monomial(std::string &monomial, char &sign);
+    std::string differentiate_monomial(std::string &monomial);
     bool hasExponent(const std::string & str);
     std::string operate(char &sign);
     std::string mulMonomials(std::string &a, std::string &b);
@@ -756,25 +752,25 @@ public:
     int perform_arithmetic(int a_integer, int b_integer);
     std::string subMonomials(std::string &a, std::string &b);
     std::string addMonomials(std::string &a, std::string &b);
-    bool isproduct_rule_functions(std::string &a_function, std::string &b_function);
     bool isFunction(std::string &pfunction);
     void parse_argument();
-    void parse_functions_helper(std::tuple<std::string, std::string> &coefficient_function_a, std::tuple<std::string, std::string> &coefficient_function_b);
-    void parse_functions(std::string &a_coefficient,std::string &a_function, std::string &b_coefficient, std::string &b_function);
     void insert_index_to_function();
+    std::string get_exponent(std::string &monomial);
+    void collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations);
     void insert_index_to_expression(int &index, std::string &expression);
-    bool isSign(char &sign);
     bool product_exists();
-    std::tuple<std::string, std::string> get_coefficient_function(bool a_or_b);
     bool expression_is_function(char &expression);
     bool quotient_exists();
-    std::string simplify_functions();
     char set_sign(int &count);
     void fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index);
     void differentiation();
     void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
     void fill_queues(int &count);
+    void reset_operation_kind();
     Argument(std::string &argument);
+    
+    void collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string, std::allocator<std::string>> &exponents,
+                           std::deque<std::tuple<std::string, std::string>, std::allocator<std::tuple<std::string, std::string>>> &operations);
 };
 
 bool Argument::isNumber(char &number) {
@@ -1053,83 +1049,7 @@ void Argument::insert_index_to_expression(int &index, std::string &expression){
     argument.parsed_argument.push_back(index);
 }
 
-std::tuple<std::string, std::string> Argument::get_coefficient_function(bool a_or_b){
-    std::string a_coefficient;
-    std::string a_function;
-    std::string b_function;
-    std::string b_coefficient;
-    int partition_index;
-    std::tuple<std::string, std::string> coefficient_function;
-    if(a_or_b){
-        for(int i = 0; i < argument.expression_a.size(); i++){
-            if(isNumber(argument.expression_a[i])){
-                continue;
-            } else{
-                partition_index = i;
-                a_coefficient = argument.expression_a.substr(0, partition_index);
-                a_function = argument.expression_a.substr(partition_index, argument.expression_a.size());
-            }
-            coefficient_function = std::make_tuple(a_coefficient, a_function);
-        }
-    } else{
-        for(int i = 0; i < argument.expression_b.size(); i++){
-            if(isNumber(argument.expression_b[i])){
-                continue;
-            } else{
-                partition_index = i;
-                b_coefficient = argument.expression_b.substr(0, partition_index);
-                b_function = argument.expression_b.substr(partition_index, argument.expression_b.size());
-            }
-        }
-        coefficient_function = std::make_tuple(b_coefficient, b_function);
-    }
-    return coefficient_function;
-}
 
-
-void Argument::parse_functions_helper(std::tuple<std::string, std::string> & coefficient_function_a, std::tuple<std::string, std::string> &coefficient_function_b){
-    get_coefficient_function(true); //We get the coefficient and the function for expression a
-    get_coefficient_function(false); //We get the coefficient and the function for the expression b
-}
-
-
-void Argument::parse_functions(std::string &a_coefficient,std::string &a_function, std::string &b_coefficient, std::string &b_function){
-    std::tuple<std::string, std::string> coefficient_function_a;
-    std::tuple<std::string, std::string> coefficient_function_b;
-    parse_functions_helper(coefficient_function_a, coefficient_function_b);
-    a_coefficient = std::get<0>(coefficient_function_a);
-    a_function = std::get<1>(coefficient_function_a);
-    b_coefficient = std::get<0>(coefficient_function_b);
-    b_function = std::get<1>(coefficient_function_b);
-}
-
-
-bool Argument::isproduct_rule_functions(std::string &a_function, std::string &b_function){
-    return a_function != b_function;
-}
-
-
-std::string Argument::simplify_functions() { //TODO: Calculate product rule instead
-    std::string a_coefficient;
-    std::string a_function;
-    std::string b_coefficient;
-    std::string b_function;
-    std::string function_simplifiation;
-    parse_functions(a_coefficient, a_function, b_coefficient, b_function);
-    if(!isproduct_rule_functions(a_function, b_function)){
-        function_simplifiation = std::to_string(std::stoi(a_coefficient) * std::stoi(b_coefficient)) + a_function;
-    } else{
-        function_simplifiation = "product rule";
-    }
-    return function_simplifiation;
-}
-
-
-bool Argument::isSign(char &sign){
-    if(sign == '+' or sign == '-' or sign == '*' or sign == '/')
-        return true;
-    else return false;
-}
 
 bool Argument::expression_is_function(char &expression){
     if(expression == 's' or expression == 't' or expression == 'a' or expression == 'c' or expression == 'l' or expression == 'e'){
@@ -1141,11 +1061,94 @@ bool Argument::expression_is_function(char &expression){
 //If both are functions //Given a number of possible operations n, there will always be a certain number of possible product rules, and therefore possible expansions
 //3x + 2x - [(4sin(3x) * 7x) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
 
+
+
+std::string Argument::operate(char &sign) {
+    if(sign == '*') {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_polynomial) {
+            ;
+        } else if(argument.polynomial_on_function) {
+            ;
+        } else if(argument.polynommial_on_polynomial) {
+            mulMonomials(argument.expression_a, argument.expression_b);
+        }
+    } else if(sign == '/') {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_polynomial) {
+            ;
+        } else if(argument.polynomial_on_function) {
+            ;
+        } else if(argument.polynommial_on_polynomial) {
+            ;//TODO: Write a method that computes the quotient of two monomials
+        }
+    } else if(sign == '+') {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_polynomial) {
+            ;
+        } else if(argument.polynomial_on_function) {
+            ;
+        } else if(argument.polynommial_on_polynomial) {
+            addMonomials(argument.expression_a, argument.expression_b);
+        }
+    } else {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_polynomial) {
+            ;
+        } else if(argument.polynomial_on_function) {
+            ;
+        } else if(argument.polynommial_on_polynomial) {
+            subMonomials(argument.expression_a, argument.expression_b);
+        }
+    }
+    
+}
+
+void Argument::reset_operation_kind(){
+    argument.polynommial_on_polynomial = argument.polynommial_on_polynomial ? !argument.polynommial_on_polynomial : argument.polynommial_on_polynomial;
+    argument.polynomial_on_function = argument.polynomial_on_function ? !argument.polynomial_on_function : argument.polynomial_on_function;
+    argument.function_on_polynomial = argument.function_on_polynomial ? !argument.function_on_polynomial : argument.polynomial_on_function;
+    argument.function_on_function = argument.function_on_function ? !argument.function_on_function : argument.function_on_function;
+}
+
+std::string Argument::get_exponent(std::string &monomial){
+    auto found_exponent = monomial.find('^');
+    std::string exponent;
+    if(found_exponent != std::string::npos){
+        exponent = monomial.substr(found_exponent, monomial.size());
+    } else if(monomial.back() == 'x'){
+        exponent = 'x';
+    }
+    return exponent;
+}
+
+void Argument::collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string> &exponents, std::deque<std::tuple<std::string, std::string>> &operations){
+    std::string exponent;
+    if(sign == '+' or sign == '-'){
+        add_or_sub = true;
+        for(int i = 0; i < operations.size(); i++){
+            exponent = get_exponent(std::get<0>(operations[i]));
+            exponents.push_back(exponent);
+        }
+    }
+    else
+        ;
+    std::unique(exponents.begin(), exponents.end());
+}
+
 void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign){
     std::string result;
+    std::vector<std::string> exponents; //Vector containing all variables attached to coefficients, it will help the program know the different exponents there are
+    bool add_or_sub = false;
     //Another while loop must be added here to allow for multiple simplifications, therefore we will also need to adjust the fill_operations_queue function,
     //and create a function that sets the counter in accordance to the sign (set_counter(char &sign))
+    collect_exponents(add_or_sub, sign, exponents, operations);
     while(!operations.empty()){
+        reset_operation_kind();
         argument.expression_a = std::get<0>(operations.front());
         argument.expression_b = std::get<1>(operations.front());
         operations.pop_front();
@@ -1154,7 +1157,7 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
             std::cout<<argument.expression_a<<std::endl;
             std::cout<<argument.expression_b<<std::endl;
             std::cout<<sign<<std::endl;;
-        } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //3sin(x) * 3cos(x)
+        } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //3x * 2x or 3 * 2
             //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
             std::cout<<"Operation between polynomials"<<std::endl; //Add monomials, subtract monomials and mulMonomials here
             std::cout<<argument.expression_a<<std::endl;
@@ -1165,13 +1168,7 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
             std::cout<<argument.expression_a<<std::endl;
             std::cout<<argument.expression_b<<std::endl;
             std::cout<<sign<<std::endl;
-        } else if((expression_is_function(argument.expression_a.back()) and isNumber(argument.expression_b.back()))or(isNumber(argument.expression_a.back()) and expression_is_function(argument.expression_b.back()))){ //4x * 3sin(x) or 3sin(x) * 4x
-            std::cout<<"Function with integer times polynomial"<<std::endl;
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;
-        }
-        else if(!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))){ //Function times polynomial
+        } else if(!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))){ //Function times polynomial
             std::cout<<"Function times polynomial"<<std::endl;
             std::cout<<argument.expression_a<<std::endl;
             std::cout<<argument.expression_b<<std::endl;
@@ -1181,7 +1178,7 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
             std::cout<<argument.expression_a<<std::endl;
             std::cout<<argument.expression_b<<std::endl;
             std::cout<<sign<<std::endl;
-        }
+        }//TODO: We must check here if our operation is valid or not, if it's not we don't insert it in the map
         _index_to_resultp.first = indices.front();//Now from all the pieces gathered in index to result we must filter out the ones that are not valid
         _index_to_resultp.second = result;//We'll reunite the pieces to make up the derivative
         _index_to_result.insert(_index_to_resultp);
@@ -1336,24 +1333,25 @@ std::string Argument::differentiate() {
     differentiation();
 }
 
-std::string Argument::differentiate_monomial(std::string &monomial, char &sign){
+std::string Argument::differentiate_monomial(std::string &monomial) {
     std::string exponent;
     std::string derivative;
     std::string coefficient;
-    int partition;
-    if(monomial == "x") //We handle the case where we have x
-        derivative = sign + 'x';
-    return derivative;
-    for(int i = 0; i < monomial.size(); i++) {
-        if (monomial[i] == '^') {
-            partition = i;
-            exponent = monomial.substr(partition, monomial.size());
-            monomial = monomial.substr(0, partition - 1);
-            break;
-        }
-        continue;
+    //TODO: Handle the case where we have an integer
+    if (monomial == "x"){ //We handle the case where we have x
+        derivative = "1";
+        return derivative;
     }
-    if(exponent.back() == '^') //Handles the case where we have Nx^N
+    else{
+        auto partition = monomial.find('^');
+        if(partition != std::string::npos){
+            exponent = monomial.substr(partition, monomial.size());
+            monomial = monomial.substr(0, partition - 2);
+        } else if(monomial.back() == 'x'){
+            derivative = monomial.substr(0, monomial.size() - 1);
+        }
+    }
+    if(exponent.front() == '^') //Handles the case where we have Nx^N
         if(monomial != "x"){
             if(exponent.front() == '2' and exponent.size() == 2) { //Nx^2
                 derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(
@@ -1376,9 +1374,10 @@ std::string Argument::differentiate_monomial(std::string &monomial, char &sign){
                 derivative = derivative + '^' + exponent;
             }
         }
-        else //If exponent.back is not equal to '^' we simply have no exponent and therefore will have this case Nx
-            derivative = monomial.substr(0, monomial.size() - 1);
-    return sign + derivative;
+        else{ //We just have a coefficient N
+            derivative = 0;
+        }
+    return derivative;
 }
 
 
@@ -1551,12 +1550,8 @@ std::string Argument::add_sub(std::string &a, std::string &b){
 
 std::string Argument::arithmetic(std::string &a, std::string &b) {
     std::string result;
-    argument.negative_operation = false;
-    if(argument.sign == "-") //TODO: Make sure that the arithmetic operator checks for the sign
-        argument.negative_operation = true;
     check_arithmetic_equivalency(a, b);
-    if(!argument.negative_operation)
-        result = add_sub(a, b);
+    result = add_sub(a, b);
     return result;
 }
 
@@ -1570,6 +1565,7 @@ bool Argument::isFunction(std::string &pfunction) {
 Argument::Argument(std::string &argument){
     _argument = argument;
 }
+
 
 
 void test_argument(){
