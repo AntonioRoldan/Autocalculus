@@ -16,6 +16,221 @@
 #include <stack>
 #include <sstream>
 
+class Parser{
+    
+private:
+    std::string _expression;
+    std::vector<std::string>_expressionarr;
+    bool _use_multimap;
+    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
+    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
+public:
+    std::vector<std::string> detect_functions();
+    bool isNumber(char &number);
+    bool isSymbol(char &symbol);
+    Parser(std::string &expression);
+};
+
+Parser::Parser(std::string &expression) {
+    _expression = expression;
+}
+
+bool Parser::isNumber(char &number) {
+    auto pos = std::find(_numbers.begin(), _numbers.end(), number);
+    return pos != _numbers.end();
+}
+
+bool Parser::isSymbol(char &symbol) {
+    auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
+    return pos != _symbols.end();
+}
+
+std::vector<std::string> Parser::detect_functions() { //Refactoring needed
+    std::vector<std::string> parsed_expression;
+    int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
+    std::string exponent;
+    bool catch_exponent = false;
+    bool polynomial_raised = false;
+    bool integer_raised = false;
+    bool done = false;
+    bool previous_number;
+    std::string number;
+    std::string function;
+    while (!done) {
+        for (int i = 0; i < _expression.size(); i++) {
+            
+            switch (_expression[i]) {
+                    
+                case 'l' :
+                    if (_expression[i + 1] == 'n') {
+                        function = "ln";
+                        _expressionarr.push_back(function);
+                        ln++;
+                    } else if (_expression[i + 1] == 'o') {
+                        function = "log";
+                        _expressionarr.push_back(function);
+                        log++;
+                    }
+                    break;
+                    
+                case 's' :
+                    if (_expression[i + 1] == 'i') {
+                        if (_expression[i - 3] == 'a');
+                        else {
+                            function = "sin";
+                            _expressionarr.push_back(function);
+                            sin++;
+                        }
+                    } else if (_expression[i - 2] == 'c') {
+                        if (_expression[i + 1] == 'e') { ;
+                        } else if (_expression[i - 1] == 'c') {
+                            function = "arcsin";
+                            _expressionarr.push_back(function);
+                            arcsin++;
+                        } else {
+                            function = "cos";
+                            _expressionarr.push_back(function);
+                            cos++;
+                        }
+                    } else if (_expression[i + 1] == 'e') {
+                        function = "sec";
+                        _expressionarr.push_back(function);
+                        sec++;
+                    }
+                    break;
+                    
+                case 'c' :
+                    if (_expression[i + 1] == 'o') {
+                        if (_expression[i - 2] == 'a');
+                        else if (_expression[i + 3] == 'e') {
+                            function = "cosec";
+                            _expressionarr.push_back(function);
+                            cosec++;
+                        } else if (_expression[i + 2] == 's') {
+                            function = "cos";
+                            _expressionarr.push_back(function);
+                            cos++;
+                        }
+                    } else if (_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
+                        ;
+                    else if (_expression[i - 1] == 'e');
+                    else;
+                    break;
+                    
+                case 'a':
+                    switch (_expression[i + 3]) {
+                            
+                        case 'o':
+                            function = "arcos";
+                            _expressionarr.push_back(function);
+                            arcos++;
+                            break;
+                            
+                        case 's':
+                            function = "arcsin";
+                            _expressionarr.push_back(function);
+                            arcsin++;
+                            break;
+                            
+                            
+                        case 't':
+                            function = "arctan";
+                            _expressionarr.push_back(function);
+                            arctan++;
+                            break;
+                    }
+                    break;
+                    
+                case 't':
+                    if (_expression[i - 3] == 'a');
+                    else if (_expression[i - 2] == 'c') {
+                        function = "cotan";
+                        _expressionarr.push_back(function);
+                        cotan++;
+                        break;
+                    } else {
+                        function = "tan";
+                        _expressionarr.push_back(function);
+                        tan++;
+                        break;
+                    }
+                    break;
+                    
+                case 'e':
+                    if (_expression[i - 1] == 's');
+                    else if (_expression[i - 3] == 'c');
+                    else {
+                        function = "e";
+                        _expressionarr.push_back(function);
+                        e++;
+                        break;
+                    }
+                    break;
+                default:
+                    if (isspace(_expression[i]));
+                    else if (isNumber(_expression[i]) and !previous_number) {
+                        if (!catch_exponent) {
+                            number += _expression[i];
+                        } else {
+                            exponent += _expression[i];
+                        }
+                        previous_number = true;
+                    } else if (isNumber(_expression[i]) and previous_number) {
+                        if (!catch_exponent)
+                            number += _expression[i];
+                        else
+                            exponent += _expression[i];
+                    } else if (!isNumber(_expression[i]) and previous_number) {
+                        if (_expression[i] == '^') {
+                            if (_expression[i - 1] == 'x' or
+                                _expression[i - 1] == 'y') {//If it is a polynomial raised to some power
+                                number += _expression[i]; //Number will be added its exponent symbol
+                                catch_exponent = true;
+                                polynomial_raised = true;
+                            } else {
+                                catch_exponent = true;
+                                integer_raised = true;
+                            }
+                        } else if (catch_exponent and integer_raised) { //TODO Get the program to catch exponents of integers and monomials correctly testing phase
+                            number = std::to_string(std::pow(std::stoi(number), std::stoi(exponent)));
+                            _expressionarr.push_back(number);
+                            exponent.clear();
+                            integer_raised = false;
+                        } else if (catch_exponent and polynomial_raised) {
+                            number += exponent; //Number will be added its exponent so it will later be processed by differentiate_monomial
+                            _expressionarr.push_back(number);
+                            exponent.clear();
+                            polynomial_raised = false;
+                        } else {
+                            previous_number = false;
+                            _expressionarr.push_back(number);
+                            number.clear();
+                        }
+                    }
+                    if (isSymbol(_expression[i])) { //TODO Get the program to process exponents to expressions between brackets as functions
+                        if (_expression[i] == '^' and _expression[i - 1] ==
+                            ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
+                            ; //with its respective derivative
+                        else
+                            _expressionarr.push_back(std::string(1, _expression[i])); //We convert char into a string of length one
+                    }
+            }
+        }
+        if (_use_multimap)
+            done = true;
+        else {
+            _use_multimap = true; //We perform another set of iterations
+            _expressionarr.clear();
+        }
+    }
+    for (int i = 0; i < _expressionarr.size(); i++) {
+        std::cout << _expressionarr[i] << std::endl;
+    }
+    parsed_expression = _expressionarr;
+    return parsed_expression;
+}
+
+
 class derivative{
     
     friend class argument;
@@ -79,204 +294,6 @@ public:
     derivative& operator = (derivative&&) & = default; //Copy assignment operator
     ~derivative(); //Destructor
 };
-
-void derivative::detect_functions(){ //Refactoring needed
-    int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
-    std::string exponent;
-    bool catch_exponent = false;
-    bool polynomial_raised = false;
-    bool integer_raised = false;
-    bool done = false;
-    bool previous_number;
-    std::string number;
-    std::string function;
-    while(!done){
-        for(int i = 0; i < _expression.size(); i++){
-            
-            switch(_expression[i]){
-                    
-                case 'l' :  if(_expression[i + 1] == 'n'){
-                    function = "ln";
-                    _expressionarr.push_back(function);
-                    ln++;
-                }
-                else if(_expression[i + 1] == 'o'){
-                    function = "log";
-                    _expressionarr.push_back(function);
-                    log++;
-                }
-                    break;
-                    
-                case 's' : if(_expression[i + 1] == 'i'){
-                    if(_expression[i - 3] == 'a')
-                        ;
-                    else {
-                        function = "sin";
-                        _expressionarr.push_back(function);
-                        sin++;
-                    }
-                }
-                else if(_expression[i - 2] == 'c'){
-                    if(_expression[i + 1] == 'e'){
-                        ;
-                    }
-                    else if(_expression[i - 1] == 'c'){
-                        function = "arcsin";
-                        _expressionarr.push_back(function);
-                        arcsin++;
-                    }
-                    else{
-                        function = "cos";
-                        _expressionarr.push_back(function);
-                        cos++;
-                    }
-                }
-                else if(_expression[i + 1] == 'e'){
-                    function = "sec";
-                    _expressionarr.push_back(function);
-                    sec++;
-                }
-                    break;
-                    
-                case 'c' :  if(_expression[i + 1] == 'o'){
-                    if(_expression[i - 2] == 'a')
-                        ;
-                    else if(_expression[i + 3] == 'e'){
-                        function = "cosec";
-                        _expressionarr.push_back(function);
-                        cosec++;
-                    }
-                    else if(_expression[i + 2] == 's'){
-                        function = "cos";
-                        _expressionarr.push_back(function);
-                        cos++;
-                    }
-                }
-                else if(_expression[i + 1] == 's') //If it is arcsin we will cause a redundance
-                    ;
-                else if(_expression[i - 1] == 'e')
-                    ;
-                else
-                    ;
-                    break;
-                    
-                case 'a': switch(_expression[i+3]){
-                        
-                    case 'o':  function = "arcos";  _expressionarr.push_back(function); arcos++;
-                        break;
-                        
-                    case 's':   function = "arcsin"; _expressionarr.push_back(function); arcsin++;
-                        break;
-                        
-                        
-                    case 't':   function = "arctan";  _expressionarr.push_back(function); arctan++;
-                        break;
-                }
-                    break;
-                    
-                case 't':   if(_expression[i - 3] == 'a')
-                    ;
-                else if(_expression[i - 2] == 'c'){
-                    function = "cotan";
-                    _expressionarr.push_back(function);
-                    cotan++;
-                    break;
-                }
-                else{
-                    function = "tan";
-                    _expressionarr.push_back(function);
-                    tan++;
-                    break;
-                }
-                    break;
-                    
-                case 'e':   if(_expression[i - 1] == 's')
-                    ;
-                else if(_expression[i - 3] == 'c')
-                    ;
-                else{
-                    function = "e";
-                    _expressionarr.push_back(function);
-                    e++;
-                    break;
-                }
-                    break;
-                default:
-                    if(isspace(_expression[i]))
-                        ;
-                    else if(isNumber(_expression[i]) and !previous_number) {
-                        if(!catch_exponent){
-                            number += _expression[i];
-                        }
-                        else{
-                            exponent += _expression[i];
-                        }
-                        previous_number = true;
-                    }
-                    else if(isNumber(_expression[i]) and previous_number){
-                        if(!catch_exponent)
-                            number += _expression[i];
-                        else
-                            exponent += _expression[i];
-                    }
-                    else if(!isNumber(_expression[i]) and previous_number){
-                        if(_expression[i] == '^') {
-                            if (_expression[i - 1] == 'x' or
-                                _expression[i - 1] == 'y') {//If it is a polynomial raised to some power
-                                number += _expression[i]; //Number will be added its exponent symbol
-                                catch_exponent = true;
-                                polynomial_raised = true;
-                            }
-                            else{
-                                catch_exponent = true;
-                                integer_raised = true;
-                            }
-                        }
-                        else if(catch_exponent and integer_raised) { //TODO Get the program to catch exponents of integers and monomials correctly testing phase
-                            number = std::to_string(std::pow(std::stoi(number), std::stoi(exponent)));
-                            _expressionarr.push_back(number);
-                            exponent.clear();
-                            integer_raised = false;
-                        }
-                        else if(catch_exponent and polynomial_raised){
-                            number += exponent; //Number will be added its exponent so it will later be processed by differentiate_monomial
-                            _expressionarr.push_back(number);
-                            exponent.clear();
-                            polynomial_raised = false;
-                        }
-                        else{
-                            previous_number = false;
-                            _expressionarr.push_back(number);
-                            number.clear();
-                        }
-                    }
-                    if(isSymbol(_expression[i])){ //TODO Get the program to process exponents to expressions between brackets as functions
-                        if(_expression[i] == '^' and _expression[i - 1] == ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
-                            ; //with its respective derivative
-                        else
-                            _expressionarr.push_back(std::string(1, _expression[i])); //We convert char into a string of length one
-                    }
-            }
-        }
-        if(ln >= 2 or log >= 2 or sin >= 2 or cos >= 2 or tan >= 2 or sec >= 2 or cosec >= 2 or cotan >= 2 or arcsin >= 2 or arcos >= 2 or arctan >= 2 or e >= 2){
-            _repeated_values = true;
-        }
-        if(_use_multimap)
-            done = true;
-        else{
-            _use_multimap = true; //We make do another set of iterations
-            _expressionarr.clear();
-            _index_to_bracketsm.clear();
-            _symbols_classificationm.clear();
-        }
-    }
-    for(int i = 0; i < _expressionarr.size(); i++){
-        std::cout<<_expressionarr[i]<<std::endl;
-    }
-    insert_index_to_function();
-    insert_index_to_symbols();
-}
-
 
 
 bool derivative::isNumber(char &number) {
@@ -445,7 +462,12 @@ void derivative::test1(){
 
 void derivative::find_scopes(){
     //It stores each function along with its argument range, defined by the brackets position in a map
-    detect_functions();
+    Parser parse = Parser(_expression);
+    _expressionarr = parse.detect_functions();
+    _repeated_values = true;
+    _use_multimap = true;
+    insert_index_to_function();
+    insert_index_to_symbols();
     std::vector<int> brackets_positions = brackets_bag();
     std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
     int single_bracket; //A bracket looking for a partner
@@ -768,9 +790,6 @@ public:
     void fill_queues(int &count);
     void reset_operation_kind();
     Argument(std::string &argument);
-    
-    void collect_exponents(bool &add_or_sub, char &sign, std::vector<std::string, std::allocator<std::string>> &exponents,
-                           std::deque<std::tuple<std::string, std::string>, std::allocator<std::tuple<std::string, std::string>>> &operations);
 };
 
 bool Argument::isNumber(char &number) {
@@ -788,194 +807,6 @@ bool Argument::isSymbol(std::string symbol) {
     else {
         return true;
     }
-}
-
-void Argument::detect_functions() { //Refactoring needed
-    int log = 0, ln = 0, sin = 0, cos = 0, tan = 0, sec = 0, cosec = 0, cotan = 0, arcsin = 0, arcos = 0, arctan = 0, e = 0;
-    std::string exponent;
-    bool catch_exponent = false;
-    bool polynomial_raised = false;
-    bool integer_raised = false;
-    bool done = false;
-    bool previous_number;
-    bool numberattachedtofunction = false;
-    std::string number;
-    std::string function;
-    std::string numbertimesfunction;
-    while (!done) {
-        for (int i = 0; i <= _argument.size(); i++) {
-            
-            switch (_argument[i]) {
-                    
-                case 'l' :
-                    if (_argument[i + 1] == 'n') {
-                        function = "ln";
-                        _argumentarr.push_back(function);
-                        ln++;
-                    } else if (_argument[i + 1] == 'o') {
-                        function = "log";
-                        _argumentarr.push_back(function);
-                        log++;
-                    }
-                    break;
-                    
-                case 's' :
-                    if (_argument[i + 1] == 'i') {
-                        if (_argument[i - 3] == 'a');
-                        else {
-                            function = "sin";
-                            _argumentarr.push_back(function);
-                            sin++;
-                        }
-                    } else if (_argument[i - 2] == 'c') {
-                        if (_argument[i + 1] == 'e') { ;
-                        } else if (_argument[i - 1] == 'c') {
-                            function = "arcsin";
-                            _argumentarr.push_back(function);
-                            arcsin++;
-                        } else {
-                            function = "cos";
-                            _argumentarr.push_back(function);
-                            cos++;
-                        }
-                    } else if (_argument[i + 1] == 'e') {
-                        function = "sec";
-                        _argumentarr.push_back(function);
-                        sec++;
-                    }
-                    break;
-                    
-                case 'c' :
-                    if (_argument[i + 1] == 'o') {
-                        if (_argument[i - 2] == 'a');
-                        else if (_argument[i + 3] == 'e') {
-                            function = "cosec";
-                            _argumentarr.push_back(function);
-                            cosec++;
-                        } else if (_argument[i + 2] == 's') {
-                            function = "cos";
-                            _argumentarr.push_back(function);
-                            cos++;
-                        }
-                    } else if (_argument[i + 1] == 's') //If it is arcsin we will cause a redundance
-                        ;
-                    else if (_argument[i - 1] == 'e');
-                    else;
-                    break;
-                    
-                case 'a':
-                    switch (_argument[i + 3]) {
-                            
-                        case 'o':
-                            function = "arcos";
-                            _argumentarr.push_back(function);
-                            arcos++;
-                            break;
-                            
-                        case 's':
-                            function = "arcsin";
-                            _argumentarr.push_back(function);
-                            arcsin++;
-                            break;
-                            
-                            
-                        case 't':
-                            function = "arctan";
-                            _argumentarr.push_back(function);
-                            arctan++;
-                            break;
-                    }
-                    break;
-                    
-                case 't':
-                    if (_argument[i - 3] == 'a');
-                    else if (_argument[i - 2] == 'c') {
-                        function = "cotan";
-                        _argumentarr.push_back(function);
-                        cotan++;
-                        break;
-                    } else {
-                        function = "tan";
-                        _argumentarr.push_back(function);
-                        tan++;
-                        break;
-                    }
-                    break;
-                    
-                case 'e':
-                    if (_argument[i - 1] == 's');
-                    else if (_argument[i - 3] == 'c');
-                    else {
-                        function = "e";
-                        _argumentarr.push_back(function);
-                        e++;
-                        break;
-                    }
-                    break;
-                default:
-                    if (isspace(_argument[i]));
-                    else if (isNumber(_argument[i]) and !previous_number) {
-                        if (!catch_exponent) {
-                            number += _argument[i];
-                        } else {
-                            exponent += _argument[i];
-                        }
-                        previous_number = true;
-                    } else if (isNumber(_argument[i]) and previous_number) {
-                        if (!catch_exponent)
-                            number += _argument[i];
-                        else
-                            exponent += _argument[i];
-                    }
-                    else if (!isNumber(_argument[i]) and previous_number) {
-                        if (_argument[i] == '^') {
-                            if (_argument[i - 1] == 'x' or
-                                _argument[i - 1] == 'y') {//If it is a polynomial raised to some power
-                                number += _argument[i]; //Number will be added its exponent symbol
-                                catch_exponent = true;
-                                polynomial_raised = true;
-                            } else {
-                                catch_exponent = true;
-                                integer_raised = true;
-                            }
-                        } else if (catch_exponent and integer_raised) { //TODO Get the program to catch exponents of integers and monomials correctly testing phase
-                            number = std::to_string(std::pow(std::stoi(number), std::stoi(exponent)));
-                            _argumentarr.push_back(number);
-                            exponent.clear();
-                            integer_raised = false;
-                        } else if (catch_exponent and polynomial_raised) {
-                            number += exponent; //Number will be added its exponent so it will later be processed by differentiate_monomial
-                            _argumentarr.push_back(number);
-                            exponent.clear();
-                            polynomial_raised = false;
-                        }
-                        else {
-                            previous_number = false;
-                            _argumentarr.push_back(number);
-                            number.clear();
-                        }
-                    }
-                    if(_argument[i] == '(' or _argument[i] == ')' or _argument[i] == '+' or _argument[i] == '-' or _argument[i] == '*' or _argument[i] == '/')
-                        _argumentarr.push_back(std::string(1, _argument[i]));
-            }
-        }
-        if (ln >= 2 or log >= 2 or sin >= 2 or cos >= 2 or tan >= 2 or sec >= 2 or cosec >= 2 or cotan >= 2 or
-            arcsin >= 2 or arcos >= 2 or arctan >= 2 or e >= 2) {
-            _repeated_values = true;
-        }
-        if (!_repeated_values)
-            done = true;
-        else if (_use_multimap)
-            done = true;
-        else {
-            _use_multimap = true; //We make do another set of iterations
-            _argumentarr.clear();
-        }
-    }
-    insert_index_to_function();
-    //for (int i = 0; i < _argumentarr.size(); i++) {
-    //std::cout << _argumentarr[i] << std::endl;
-    //}
 }
 
 void Argument::insert_index_to_function(){
@@ -1000,7 +831,10 @@ void Argument::parse_argument() { //TODO get the program to correctly assign sig
     bool catch_argument = false;
     std::string symbol;
     int index = 0;
-    detect_functions();
+    Parser parse = Parser(_argument);
+    _argumentarr= parse.detect_functions();
+    _use_multimap = true;
+    insert_index_to_function();
     for(int i = 0; i < _argumentarr.size(); i++){
         //We prepare a map, mapping indices to expressions
         if(_argumentarr[i] == "(" or _argumentarr[i] == ")"){
@@ -1375,7 +1209,7 @@ std::string Argument::differentiate_monomial(std::string &monomial) {
             }
         }
         else{ //We just have a coefficient N
-            derivative = 0;
+            derivative = "0";
         }
     return derivative;
 }
@@ -1565,7 +1399,6 @@ bool Argument::isFunction(std::string &pfunction) {
 Argument::Argument(std::string &argument){
     _argument = argument;
 }
-
 
 
 void test_argument(){
