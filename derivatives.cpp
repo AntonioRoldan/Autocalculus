@@ -741,8 +741,10 @@ private:
         bool equivalent_exponentiation;
         bool both_integers;
         bool non_exponentiated_monomials;
+        bool double_subtraction = false;
         std::string expression_a;
         std::string expression_b;
+        std::vector<int> add_sub_indices;
         std::vector<std::string> argument;
         std::string sign;
         std::vector<int> symbols; //Symbol indices
@@ -778,13 +780,15 @@ public:
     bool expression_is_function(char &expression);
     bool quotient_exists();
     char set_sign(int &count);
-    void fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index);
+    void fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices_tuples, int &count, int &index);
     void differentiation();
-    void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign);
+    void perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices, char &sign);
     void fill_queues(int &count);
     void reset_operation_kind();
     void assign_ab(std::deque<std::tuple<std::string, std::string>> &operations);
-    std::vector<std::string> gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations);
+    std::vector<std::string> gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices_tuples);
+    std::string set_subtractions_additions(std::vector<std::string> &common_exponents, std::deque<std::tuple<int, int>> &indices_tuples);
+    void set_operation(bool add_or_sub, std::string a_sign, std::string b_sign);
     Argument(std::string &argument);
 };
 
@@ -970,29 +974,99 @@ void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &opera
     operations.pop_front();
 }
 
-std::vector<std::string> Argument::gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations){
+std::vector<std::string> Argument::gather_up_common_exponents(std::string &exponent_pivot, std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices_tuples){
     int count;
+    int index;
     std::string exponent;
     std::vector<std::string> common_exponents;
     typedef std::tuple<std::string, std::string> a_and_b;
+    typedef std::tuple<int, int> indices_pair;
     for(a_and_b ab : operations){
-        exponent = get_exponent(std::get<0>(ab));
-        count += 1;
-        if(exponent== exponent_pivot){
-            common_exponents.push_back(std::get<0>(ab));
-        } else if(operations.size() == count){
-            exponent = get_exponent(std::get<1>(ab));
-            if(exponent == exponent_pivot)
-                common_exponents.push_back(std::get<1>(ab));
+        for(indices_pair indices : indices_tuples){
+            exponent = get_exponent(std::get<0>(ab));
+            count += 1;
+            index = std::get<0>(indices);
+            if(exponent == exponent_pivot){
+                argument.add_sub_indices.push_back(index);
+                common_exponents.push_back(std::get<0>(ab));
+            } else if(operations.size() == count){
+                exponent = get_exponent(std::get<1>(ab));
+                if(exponent == exponent_pivot){
+                    argument.add_sub_indices.push_back(index);
+                    common_exponents.push_back(std::get<1>(ab));
+                }
+            }
         }
-    } //TODO: Test this
+    } //TODO: Test this mess
     return common_exponents;
 }
+
+void Argument::set_operation(bool add_or_sub, std::string a_sign, std::string b_sign){
+    std::string temp;
+    if(a_sign == "-" and b_sign == "+"){
+        add_or_sub = false;
+        temp = argument.expression_a;
+        argument.expression_b = argument.expression_a;
+        argument.expression_b = temp;
+    } else if(a_sign == "-" and b_sign == "-"){
+        add_or_sub = true;
+        argument.double_subtraction = true;
+    } else if(a_sign == "+" and b_sign == "+"){
+        add_or_sub = true;
+    } else if(a_sign == "+" and b_sign == "-"){
+        add_or_sub = false;
+    }
+}
+
+std::string Argument::set_subtractions_additions(std::vector<std::string> &common_exponents, std::deque<std::tuple<int, int>> &indices_tuples){
+    typedef std::tuple<int, int> ab;
+    int index = 0;
+    std::vector<int> already_processed_operations; //Stores indices of already processed monomials
+    bool add_or_sub; //If it's addition it will be set to true
+    std::string result;
+    std::string a_sign;
+    std::string b_sign;
+    for(std::string exponent : common_exponents){
+        a_sign = _argumentarr[argument.add_sub_indices[index] - 1];
+        b_sign = _argumentarr[argument.add_sub_indices[index] + 1];
+        if(a_sign == ")") {
+            a_sign = '+';
+        }
+        argument.expression_a = exponent;
+        if(result.empty())
+            argument.expression_b = std::next(exponent);
+        else{
+            argument.expression_b = result;
+        }
+        set_operation(add_or_sub, a_sign, b_sign);
+        add_or_sub  ? addMonomials(argument.expression_a, argument.expression_b) : subMonomials(argument.expression_a, argument.expression_b);
+        index += 1;
+    }
+}
+
 //Algorithm example for x as an exponent
-//3x + 2x^2 + 4x - 5x^2 - 6x + 3x + x
+//3x + 2x^2 + 4x - 5x - 6x + 3x + x
+//Addition
 //(3x,2x^2), (2x^2, 4x), (6x, 3x), (3x, x)
+//[3x, 4x, 6x, 3x, x] We add these
+//Next we add 2x^2. keeping track of the resulting sign, if it was processed if as is the case here we only have one value we have to pick up the sign from the argument array
+//For that we will use the operations_indices
+//Subtraction
+//[-5x]
+//Result
+//[15x + 2x^2 -5x]
+//Now if the length is not two we try simplifying further, gathering up similar results a simplification function will come in handy
 //3x + 4x
-void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, char &sign){
+//The expression will then have to be differentiated
+
+//For the product and quotient rules, once the product rule has been processed we will insert the values in the index to expression map
+//The next product rule will check if the value has already been processed, if that's the case, we look it up in the map and extract the appropriate
+//monomial or function upon which the next product or quotient rule will be performed
+//The quotient rule poses significant challenges in terms of how many expressions can be processed
+
+//Another class that allows for proper algebraic manipulation with better algorithms would do the job way better but that's just an idea for the future
+//It won't be implemented as long as the current algorithm works (tho it is not perfect)
+void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices_tuples, char &sign){
     std::string result;
     std::deque<std::string> exponents; //Vector containing all variables attached to coefficients, it will help the program know the different exponents there are
     std::vector<std::string> exponents_already_processed;
@@ -1001,47 +1075,45 @@ void Argument::perform_differentiation(std::deque<std::tuple<std::string, std::s
     bool add_or_sub = false;
     //Another while loop must be added here to allow for multiple simplifications, therefore we will also need to adjust the fill_operations_queue function,
     //and create a function that sets the counter in accordance to the sign (set_counter(char &sign))
-    collect_exponents(add_or_sub, sign, exponents, operations);
-    while(!operations.empty()){
-        reset_operation_kind();
-        if(add_or_sub){
+    if(add_or_sub){
+        collect_exponents(add_or_sub, sign, exponents, operations);
+        for(std::string exponent : exponents){
             exponent_pivot = exponents.front();
-            common_exponents = gather_up_common_exponents(exponent_pivot, operations);
+            common_exponents = gather_up_common_exponents(exponent_pivot, operations, indices_tuples);
         }
-        else {
+    } else{
+        while(!operations.empty()) {
+            reset_operation_kind();
             assign_ab(operations);
+            if (!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())) {
+                std::cout << "Functions times function" << std::endl;
+                std::cout << argument.expression_a << std::endl;
+                std::cout << argument.expression_b << std::endl;
+                std::cout << sign << std::endl;;
+            } else if (isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())) { //3x * 2x or 3 * 2
+                //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
+                std::cout << "Operation between polynomials"
+                << std::endl; //Add monomials, subtract monomials and mulMonomials here
+                std::cout << argument.expression_a << std::endl;
+                std::cout << argument.expression_b << std::endl;
+                std::cout << sign << std::endl;
+            } else if (expression_is_function(argument.expression_a.back()) and expression_is_function(argument.expression_b.back())) {//sin(x) * cos(x)
+                std::cout << "Functions operation" << std::endl;
+                std::cout << argument.expression_a << std::endl;
+                std::cout << argument.expression_b << std::endl;
+                std::cout << sign << std::endl;
+            } else if (!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))) { //Function times polynomial
+                std::cout << "Function times polynomial" << std::endl;
+                std::cout << argument.expression_a << std::endl;
+                std::cout << argument.expression_b << std::endl;
+                std::cout << sign << std::endl;
+            } else if ((isNumber(argument.expression_a.back()) and !expression_is_function(argument.expression_a.back())) and !isNumber(argument.expression_b.back())) { //Polynomial times function
+                std::cout << "Polynomial times function" << std::endl;
+                std::cout << argument.expression_a << std::endl;
+                std::cout << argument.expression_b << std::endl;
+                std::cout << sign << std::endl;
+            }//TODO: We must check here if our operation is valid or not, if it's not we don't insert it in the map
         }
-        if(!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())){
-            std::cout<<"Functions times function"<<std::endl;
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;;
-        } else if(isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())){ //3x * 2x or 3 * 2
-            //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
-            std::cout<<"Operation between polynomials"<<std::endl; //Add monomials, subtract monomials and mulMonomials here
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;
-        } else if(expression_is_function(argument.expression_a.back()) and expression_is_function(argument.expression_b.back())){//sin(x) * cos(x)
-            std::cout<<"Functions operation"<<std::endl;
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;
-        } else if(!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))){ //Function times polynomial
-            std::cout<<"Function times polynomial"<<std::endl;
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;
-        } else if((isNumber(argument.expression_a.back()) and !expression_is_function(argument.expression_a.back())) and !isNumber(argument.expression_b.back())){ //Polynomial times function
-            std::cout<<"Polynomial times function"<<std::endl;
-            std::cout<<argument.expression_a<<std::endl;
-            std::cout<<argument.expression_b<<std::endl;
-            std::cout<<sign<<std::endl;
-        }//TODO: We must check here if our operation is valid or not, if it's not we don't insert it in the map
-        _index_to_resultp.first = indices.front();//Now from all the pieces gathered in index to result we must filter out the ones that are not valid
-        _index_to_resultp.second = result;//We'll reunite the pieces to make up the derivative
-        _index_to_result.insert(_index_to_resultp);
-        indices.pop_front();
     }
 }
 
@@ -1093,76 +1165,77 @@ char Argument::set_sign(int &count) {
     return sign;
 }
 
-void Argument::fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<int> &indices, int &count, int &index){
+void Argument::fill_operations_queue(std::deque<std::tuple<std::string, std::string>> &operations, std::deque<std::tuple<int, int>> &indices_tuples, int &count, int &index){
     char sign;
+    char subtraction_sign;
     sign = set_sign(count);
-    for (int i = 0; i < argument.argument.size(); i++) {
-        if (argument.argument[i][0] == sign) {
-            index = i - 1;
-            indices.push_back(index);
-            operations.push_back(std::make_tuple(argument.argument[i - 1], argument.argument[i + 1]));
+    if(sign == '+') {
+        count += 1;
+        subtraction_sign = set_sign(count);
+        for (int i = 0; i < argument.argument.size(); i++) {
+            if (argument.argument[i][0] == sign or argument.argument[i][0] == subtraction_sign) {
+                index = i - 1;
+                indices_tuples.push_back(std::make_tuple(i - 1, i + 2));
+                operations.push_back(std::make_tuple(argument.argument[i - 1], argument.argument[i + 1]));
+            }
+            continue;
         }
-        continue;
+    } else{
+        for (int i = 0; i < argument.argument.size(); i++) {
+            if (argument.argument[i][0] == sign) {
+                index = i - 1;
+                indices_tuples.push_back(std::make_tuple(i - 1, i + 2));
+                operations.push_back(std::make_tuple(argument.argument[i - 1], argument.argument[i + 1]));
+            }
+            continue;
+        }
     }
 }
 
 void Argument::fill_queues(int &count){
     typedef std::tuple<std::string, std::string> expressions_a_and_b;
-    std::deque<expressions_a_and_b> additions;
-    std::deque<expressions_a_and_b> subtractions;
+    std::deque<expressions_a_and_b> simple_arithmetic;
     std::deque<expressions_a_and_b> products;
     std::deque<expressions_a_and_b> quotients;
+    std::vector<int> simple_arithmetic_indices;
+    std::vector<int> subtraction_indices;
+    std::vector<int> product_indices;
+    std::vector<int> quotient_indices;
     int index;
-    std::deque<int> indices; //Indices where first element of the operation can be found
+    std::deque<std::tuple<int, int>> indices_tuples; //Indices where first element of the operation can be found
     char sign;
-    if (argument.product_and_quotients_exist) {
+    if (argument.product_and_quotients_exist){
         sign = set_sign(count);
-        fill_operations_queue(products, indices, count, index);
-        perform_differentiation(products, indices, sign);
+        fill_operations_queue(products, indices_tuples, count, index);
+        perform_differentiation(products, indices_tuples, sign);
         count += 1;
         sign = set_sign(count);
-        fill_operations_queue(quotients, indices, count, index);
-        perform_differentiation(quotients, indices, sign);
+        fill_operations_queue(quotients, indices_tuples, count, index);
+        perform_differentiation(quotients, indices_tuples, sign);
         count += 1;
         sign = set_sign(count);
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
-        count += 1;
-        sign = set_sign(count);
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
+        fill_operations_queue(simple_arithmetic, indices_tuples, count, index);
+        perform_differentiation(simple_arithmetic, indices_tuples, sign);
     } else if (argument.product_exists) {
         sign = set_sign(count);
-        fill_operations_queue(products, indices, count, index);
-        perform_differentiation(products, indices, sign);
+        fill_operations_queue(products, indices_tuples, count, index);
+        perform_differentiation(products, indices_tuples, sign);
         count += 1;
         sign = set_sign(count);
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
-        count += 1;
-        sign = set_sign(count);
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
+        fill_operations_queue(simple_arithmetic, indices_tuples, count, index);
+        perform_differentiation(simple_arithmetic, indices_tuples, sign);
     } else if (argument.quotient_exists){
         sign = set_sign(count);
-        fill_operations_queue(products, indices, count, index);
-        perform_differentiation(products, indices, sign);
+        fill_operations_queue(quotients, indices_tuples, count, index);
+        perform_differentiation(products, indices_tuples,  sign);
         count += 1;
         sign = set_sign(count);
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
-        count += 1;
-        sign = set_sign(count);
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
+        fill_operations_queue(simple_arithmetic, indices_tuples, count, index);
+        perform_differentiation(simple_arithmetic, indices_tuples, sign);
     } else{
         sign = set_sign(count);
-        fill_operations_queue(additions, indices, count, index);
-        perform_differentiation(additions, indices, sign);
-        count += 1;
-        sign = set_sign(count);
-        fill_operations_queue(subtractions, indices, count, index);
-        perform_differentiation(subtractions, indices, sign);
+        fill_operations_queue(simple_arithmetic, indices_tuples, count, index);
+        perform_differentiation(simple_arithmetic, indices_tuples, sign);
     }
 }
 
@@ -1339,6 +1412,8 @@ std::string Argument::addMonomials(std::string &a, std::string &b){
     std::string result;
     argument.addition_or_subtraction = true;
     result = arithmetic(a, b);
+    if(argument.double_subtraction)
+        result += "-";
     return result;
 }
 
@@ -1425,6 +1500,9 @@ Argument::Argument(std::string &argument){
     _argument = argument;
 }
 
+class Algebraic_manipulation {
+    ;
+};
 
 void test_argument(){
     std::string expression = "sin(3x) + cos(5x^53) - 3 / sin(2x)";
