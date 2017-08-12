@@ -1102,7 +1102,6 @@ void Argument::insert_index_to_expression(int &index, std::string &expression){
     argument.parsed_argument.push_back(index);
 }
 
-
 bool Argument::expression_is_function(char &expression){
     if(expression == 's' or expression == 't' or expression == 'a' or expression == 'c' or expression == 'l' or expression == 'e'){
         return true;
@@ -1173,7 +1172,7 @@ void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &opera
     argument.expression_b = std::get<1>(operations.front());
     operations.pop_front();
 }
-//THE BUG IS HERE
+//TODO: Get your shit done here
 std::vector<std::string> Argument::gather_up_common_exponents(std::string &exponent_pivot){
     int count = 0;
     int index;
@@ -1183,22 +1182,17 @@ std::vector<std::string> Argument::gather_up_common_exponents(std::string &expon
     typedef std::tuple<int, int> indices_pair;
     for(a_and_b ab : argument.simple_arithmetic_operations){
         exponent = get_exponent(std::get<0>(ab));
-        index = std::get<0>(argument.indices_tuples.front());
         argument.indices_tuples.pop_front();
         count += 1;
         if(exponent == exponent_pivot){
-            argument.add_sub_indices.push_back(index);
             common_exponents.push_back(std::get<0>(ab));
         } else if(argument.simple_arithmetic_operations.size() == count){
             exponent = get_exponent(std::get<1>(ab));
             if(exponent == exponent_pivot){
-                argument.add_sub_indices.push_back(index);
                 common_exponents.push_back(std::get<1>(ab));
             }
         }
     }
-    for(int index : argument.add_sub_indices)
-        std::cout<<index<<std::endl;
     //for(int i = 0; i < common_exponents.size(); i++){ TODO: Get it to recognise integers
     //  std::cout<<common_exponents[i]<<std::endl;
     //}
@@ -1232,6 +1226,7 @@ std::string Argument::set_subtractions_additions(std::vector<std::string> &commo
     std::string b_sign;
     bool double_negative;
     for(std::string exponent : common_exponents){
+        std::cout<<exponent<<std::endl;
         a_sign = _argumentarr[argument.add_sub_indices[index] - 1];
         b_sign = _argumentarr[argument.add_sub_indices[index] + 1];
         if(a_sign.empty())
@@ -1240,12 +1235,12 @@ std::string Argument::set_subtractions_additions(std::vector<std::string> &commo
             ;
         } else{
             if(result.empty()) {
-                argument.expression_a = _argumentarr[argument.add_sub_indices[index]];
-                argument.expression_b = _argumentarr[argument.add_sub_indices[index + 1]];
+                argument.expression_a = exponent;
+                argument.expression_b = std::next(exponent);
             }
             else{
                 argument.expression_a = result;
-                argument.expression_b = _argumentarr[argument.add_sub_indices[index + 1]];
+                argument.expression_b = std::next(exponent);
             }
             if(isFunction(argument.expression_a) or isFunction(argument.expression_b)) { //TODO: Keep track of additions or subtractions between functions
                 ;
@@ -1321,16 +1316,24 @@ std::string Argument::differentiation() {
 }
 
 void Argument::fill_simple_arithmetic(){
+    typedef std::tuple<int, int> index_a_b;
     int count = 0;
-    bool beginning = true;
     for (int i = 0; i <= _argumentarr.size(); i++) {
         if (_argumentarr[i][0] == '+' or _argumentarr[i][0] == '-') {
-            std::cout<< i - 1<<std::endl;
-            std::cout<< i + 1<<std::endl;
             argument.indices_tuples.push_back(std::make_tuple(i - 1, i + 1));
             argument.simple_arithmetic_operations.push_back(std::make_tuple(_argumentarr[i - 1], _argumentarr[i + 1]));
         }
         continue;
+    }
+    for(index_a_b iab : argument.indices_tuples){
+        count += 1;
+        if(count == argument.indices_tuples.size()) {
+            argument.add_sub_indices.push_back(std::get<0>(iab));
+            argument.add_sub_indices.push_back(std::get<1>(iab));
+        }
+        else{
+            argument.add_sub_indices.push_back(std::get<0>(iab));
+        }
     }
 }
 
