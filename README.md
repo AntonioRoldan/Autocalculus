@@ -4,20 +4,6 @@ Autocalculus is a C++ library designed to be run as a command-line tool that sup
 
 ## Development
 
-### Install Dependencies
-
-```sh
-sudo apt-get install libboost-dev
-```
-
-### Compile
-
-```sh
-make
-```
-
-### Run
-
-```sh
-./derivatives.o
-```
+1. __Install Dependencies__: `sudo apt-get install libboost-dev`
+2. __Compile__: `make`
+3. __Run__: `./derivatives.o`
