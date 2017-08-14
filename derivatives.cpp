@@ -1006,8 +1006,8 @@ public:
     std::string perform_differentiation();
     void reset_operation_kind();
     void assign_ab(std::deque<std::tuple<std::string, std::string>> &operations);
-    std::vector<std::string> gather_up_common_exponents(std::string &exponent_pivot);
-    std::string set_subtractions_additions(std::vector<std::string> &common_exponents);
+    std::vector<std::tuple<int, int>> gather_up_common_exponents(std::string &exponent_pivot);
+    std::string set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents);
     void set_operation(bool add_or_sub, std::string a_sign, std::string b_sign);
     Argument(std::string &argument);
 };
@@ -1091,6 +1091,7 @@ void Argument::parse_argument() {
     typedef std::map<int, std::string>::const_iterator it;
     it iterator;
     for(iterator = argument.index_to_expression.begin(); iterator != argument.index_to_expression.end(); iterator++){
+        argument.parsed_argument.push_back(iterator->first);
         argument.argument.push_back(iterator->second);
     }
 }
@@ -1153,7 +1154,8 @@ std::string Argument::get_exponent(std::string &monomial){
         exponent = monomial.substr(found_exponent - 1, monomial.size());
     } else if(monomial.back() == 'x'){
         exponent = "x";
-    }
+    } else if(monomial.back() == '+' or monomial.back() == '-' or monomial.back() == '*' or monomial.back() == '/')
+        exponent = "null";
     return exponent;
 }
 
@@ -1165,6 +1167,9 @@ void Argument::collect_exponents(std::deque<std::string> &exponents){
     }
     std::sort(exponents.begin(), exponents.end());
     exponents.erase(std::unique(exponents.begin(), exponents.end()), exponents.end());
+    for(std::string exponent: exponents){
+        std::cout<<exponent<<std::endl;
+    }
 }
 
 void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &operations){
@@ -1173,29 +1178,33 @@ void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &opera
     operations.pop_front();
 }
 //TODO: Get your shit done here
-std::vector<std::string> Argument::gather_up_common_exponents(std::string &exponent_pivot){
+std::vector<std::tuple<int, int>> Argument::gather_up_common_exponents(std::string &exponent_pivot){
     int count = 0;
-    int index;
+    int a_index;
+    int b_index;
     std::string exponent;
-    std::vector<std::string> common_exponents;
+    std::vector<std::tuple<int, int>> common_exponents;
     typedef std::tuple<std::string, std::string> a_and_b;
     typedef std::tuple<int, int> indices_pair;
-    for(a_and_b ab : argument.simple_arithmetic_operations){
-        exponent = get_exponent(std::get<0>(ab));
-        argument.indices_tuples.pop_front();
-        count += 1;
-        if(exponent == exponent_pivot){
-            common_exponents.push_back(std::get<0>(ab));
-        } else if(argument.simple_arithmetic_operations.size() == count){
-            exponent = get_exponent(std::get<1>(ab));
-            if(exponent == exponent_pivot){
-                common_exponents.push_back(std::get<1>(ab));
+    auto last = std::unique(argument.parsed_argument.begin(), argument.parsed_argument.end());
+    argument.parsed_argument.erase(last, argument.parsed_argument.end());
+    for(int index : argument.parsed_argument){
+        if(get_exponent(argument.index_to_expression[index]) == exponent_pivot){
+            if(count == 0){
+                a_index = index;
+                count += 1;
+            } else if(count == 1){
+                b_index = index;
+                common_exponents.push_back(std::make_tuple(a_index, b_index));
+                count += 1;
+            }
+            else{
+                count = 0;
             }
         }
+        else
+            continue;
     }
-    //for(int i = 0; i < common_exponents.size(); i++){ TODO: Get it to recognise integers
-    //  std::cout<<common_exponents[i]<<std::endl;
-    //}
     return common_exponents;
 }
 
@@ -1216,45 +1225,39 @@ void Argument::set_operation(bool add_or_sub, std::string a_sign, std::string b_
     }
 }
 
-std::string Argument::set_subtractions_additions(std::vector<std::string> &common_exponents){
+std::string Argument::set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents){
     typedef std::tuple<int, int> ab;
-    int index = 0;
+    int count = 0;
     std::vector<int> already_processed_operations; //Stores indices of already processed monomials
     bool add_or_sub;
     std::string result;
     std::string a_sign;
     std::string b_sign;
     bool double_negative;
-    for(std::string exponent : common_exponents){
-        std::cout<<exponent<<std::endl;
-        a_sign = _argumentarr[argument.add_sub_indices[index] - 1];
-        b_sign = _argumentarr[argument.add_sub_indices[index] + 1];
-        if(a_sign.empty())
-            a_sign = "+";
-        if(a_sign == "*" or a_sign == "/" or b_sign == "*" or b_sign == "/"){ //NOTE: This will help us ignore products and quotients but in theory, once products and quotients have been processed that should not be a problem
-            ;
-        } else{
-            if(result.empty()) {
-                argument.expression_a = exponent;
-                argument.expression_b = std::next(exponent);
-            }
-            else{
-                argument.expression_a = result;
-                argument.expression_b = std::next(exponent);
-            }
-            if(isFunction(argument.expression_a) or isFunction(argument.expression_b)) { //TODO: Keep track of additions or subtractions between functions
-                ;
-            } else{
-                set_operation(add_or_sub, a_sign, b_sign);
-                double_negative = argument.double_subtraction ? true : false;
-                algebraic_manipulation algebraic_operation = algebraic_manipulation(double_negative);
-                //result = add_or_sub  ? algebraic_operation.addMonomials(argument.expression_a, argument.expression_b) : algebraic_operation.subMonomials(argument.expression_a, argument.expression_b);
-                //std::cout<<"joder"<<std::endl;
-                //std::cout<<a_sign<<argument.expression_a<<"\n"<<b_sign<<argument.expression_b<<std::endl;
-            }
+    for(ab a_b : common_exponents){
+        count += 1;
+        if(result.empty()){
+            a_sign = argument.index_to_expression[std::get<0>(a_b) - 1];
+            if(a_sign.empty())
+                a_sign = "+";
+            b_sign = argument.index_to_expression[std::get<1>(a_b) - 1];
+            argument.expression_a = argument.index_to_expression[std::get<0>(a_b)];
+            argument.expression_b = argument.index_to_expression[std::get<1>(a_b)];
+            //std::cout<<"joder"<<std::endl;
+            std::cout<<a_sign<<argument.expression_a<<std::endl;
+            std::cout<<b_sign<<argument.expression_b<<std::endl;
+            //We call the add or sub monomials function here
+        } else {
+            a_sign = argument.index_to_expression[std::get<0>(a_b) - 1];
+            b_sign = argument.index_to_expression[std::get<1>(a_b) - 1];
+            argument.expression_a = result;
+            argument.expression_b = argument.index_to_expression[std::get<1>(a_b)];
+            //We call the add or sub monomials function here
         }
-        index += 1;
+        //if(count == common_exponents.size()){ TODO: Test this mess
+        //;
     }
+    common_exponents.clear();
     return result;
 }
 
@@ -1262,7 +1265,7 @@ std::string Argument::perform_differentiation_helper(bool simple_arithmetic){ //
     std::string result;
     std::deque<std::string> exponents;
     std::vector<std::string> exponents_already_processed;
-    std::vector<std::string> common_exponents;
+    std::vector<std::tuple<int, int>> common_exponents;
     std::string exponent_pivot;
     std::string simplification_result;
     std::string derivative;
@@ -1271,7 +1274,7 @@ std::string Argument::perform_differentiation_helper(bool simple_arithmetic){ //
         for(std::string exponent : exponents){
             exponent_pivot = exponent;
             common_exponents = gather_up_common_exponents(exponent_pivot);
-            simplification_result += set_subtractions_additions(common_exponents);
+            set_subtractions_additions(common_exponents);
             common_exponents.clear();
         }
     } else{ //We perform quotient or product rule
@@ -1483,7 +1486,6 @@ void autocalculus(){
 
 int main(){
     
-    autocalculus();
     test_argument();
     getchar();
     return 0;
