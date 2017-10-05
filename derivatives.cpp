@@ -13,16 +13,33 @@
 class Parser{
     
 private:
+    
     std::string _expression;
     std::vector<std::string>_expressionarr;
     bool _use_multimap;
+    bool _repeated_values;
     std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
     std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
+    std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
+    std::pair<int, std::string> _index_to_functionp;
+    std::map<int, std::string> _index_to_functionm;
+    std::pair<int, std::string> _index_to_expressionp;
+    std::map<int, std::string> _index_to_expression;
+    std::multimap<int, std::string> _index_to_functionmr;
+    std::vector<int> parsed_argument;
+    std::vector<std::string> poly;
+    
 public:
+    
     std::vector<std::string> detect_functions();
     bool isNumber(char &number);
     bool isSymbol(char &symbol);
+    bool isFunction(std::string &pfunction);
+    void insert_index_to_function();
+    void insert_index_to_expression(int &index, std::string &expression);
+    std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> parse();
     Parser(std::string &expression);
+    
 };
 
 Parser::Parser(std::string &expression) {
@@ -34,9 +51,86 @@ bool Parser::isNumber(char &number) {
     return pos != _numbers.end();
 }
 
+bool Parser::isFunction(std::string &pfunction) {
+    auto isFunction = std::find(_func.begin(), _func.end(), pfunction);
+    return isFunction != _func.end();
+}
+
 bool Parser::isSymbol(char &symbol) {
     auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
     return pos != _symbols.end();
+}
+
+void Parser::insert_index_to_function(){
+    for(int i = 0; i < _expressionarr.size(); i++){
+        auto isfunction = std::find(_func.begin(), _func.end(), _expressionarr[i]);
+        if(isfunction != _func.end()){
+            _index_to_functionp.first = i;
+            _index_to_functionp.second = _expressionarr[i];
+            if(!_repeated_values)
+                _index_to_functionm.insert(_index_to_functionp);
+            else
+                _index_to_functionmr.insert(_index_to_functionp);
+        }
+        else
+            continue;
+    }
+}
+
+void Parser::insert_index_to_expression(int &index, std::string &expression){
+    _index_to_expressionp.first = index;
+    _index_to_expressionp.second = expression;
+    _index_to_expression.insert(_index_to_expressionp);
+}
+
+std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> Parser::parse() {
+    std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> tokens;
+    std::string function;
+    std::string monomial;
+    bool catch_argument = false;
+    std::string symbol;
+    int index = 0;
+    _expressionarr = detect_functions();
+    _use_multimap = true;
+    insert_index_to_function();
+    for(int i = 0; i < _expressionarr.size(); i++){
+        //We prepare a map, mapping indices to expressions
+        if(_expressionarr[i] == "(" or _expressionarr[i] == ")"){
+            catch_argument = _expressionarr[i] == "(";
+        }
+        else if(isFunction(_expressionarr[i])) {
+            function = _expressionarr[i] + "(" + ")";
+            std::cout<<"Function: "<<function<<std::endl;
+        }
+        else if(!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and catch_argument){
+            std::string monomial_inside = _expressionarr[i];
+            std::cout<<"Monomial inside: "<<monomial_inside<<std::endl;
+            auto starting_brackets = function.find(")");
+            function.insert(starting_brackets, monomial_inside); //We insert the argument
+            insert_index_to_expression(index, function);
+            index += 1;
+        }
+        else if(!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and !catch_argument) {
+            monomial = _expressionarr[i];
+            std::cout<<"Monomial: "<<monomial<<std::endl;
+            insert_index_to_expression(index, monomial);
+            index += 1;
+        }
+        else if(isSymbol(_expressionarr[i][0])){
+            symbol = _expressionarr[i];
+            std::cout<<"Symbol: "<<symbol<<std::endl;
+            insert_index_to_expression(index, symbol);
+            index += 1;
+        }
+    }
+    typedef std::map<int, std::string>::const_iterator it;
+    it iterator;
+    for(iterator = _index_to_expression.begin(); iterator != _index_to_expression.end(); iterator++){
+        parsed_argument.push_back(iterator->first);
+        poly.push_back(iterator->second);
+    }
+    tokens = std::make_tuple(parsed_argument, _index_to_expression, poly, _index_to_functionm);
+    return tokens;
 }
 
 std::vector<std::string> Parser::detect_functions() { //Refactoring needed
@@ -225,9 +319,10 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 }
 
 class algebraic_manipulation {
+    
 private:
     
-    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
+    std::vector<char> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
     struct Binomial{
         bool double_subtraction;
         bool equivalent_exponentiation;
@@ -248,22 +343,12 @@ public:
     std::string arithmetic(std::string &a, std::string &b);
     std::string mulMonomials(std::string &a, std::string &b);
     std::string subMonomials(std::string &a, std::string &b);
-    bool hasExponent(const std::string & str);
     bool isNumber(char &number);
+    bool hasExponent(const std::string & str);
     void reset_binomial();
     algebraic_manipulation(bool &double_subtraction);
 };
 
-bool algebraic_manipulation::isNumber(char &number) {
-    auto pos = std::find(_numbers.begin(), _numbers.end(), number);
-    return pos != _numbers.end();
-}
-
-bool algebraic_manipulation::hasExponent(const std::string & str)
-{
-    const char c = '^';
-    return str.find(c) != std::string::npos;
-}
 
 std::string algebraic_manipulation::subMonomials(std::string &a, std::string &b) {
     std::string result;
@@ -274,6 +359,12 @@ std::string algebraic_manipulation::subMonomials(std::string &a, std::string &b)
     else
         result = "+" + result;
     return result;
+}
+
+bool algebraic_manipulation::hasExponent(const std::string & str)
+{
+    const char c = '^';
+    return str.find(c) != std::string::npos;
 }
 
 //addition or subtraction,
@@ -357,13 +448,17 @@ std::string algebraic_manipulation::mulMonomials(std::string &a, std::string &b)
     return result;
 }
 
+bool algebraic_manipulation::isNumber(char &number) {
+    auto pos = std::find(_numbers.begin(), _numbers.end(), number);
+    return pos != _numbers.end();
+}
 
 std::string algebraic_manipulation::addMonomials(std::string &a, std::string &b){
     std::string result;
     binomial.addition_or_subtraction = true;
     result = arithmetic(a, b);
     if(binomial.double_subtraction)
-        result += "-";
+        result = "-" + result;
     return result;
 }
 
@@ -400,7 +495,6 @@ void algebraic_manipulation::check_arithmetic_equivalency(std::string &a, std::s
         binomial.both_integers = true;
     }
 }
-
 
 std::string algebraic_manipulation::add_sub(std::string &a, std::string &b){
     std::string a_exponent;
@@ -448,508 +542,422 @@ algebraic_manipulation::algebraic_manipulation(bool &double_subtraction) {
 }
 
 
-class derivative{
+class simplifier{
     
-    friend class argument;
     
 private:
     
-    std::string _expression;
-    std::deque<std::tuple<int, int>> _function_ranges;
+    std::string expression;
     std::vector<std::string> _expressionarr;
-    std::vector<char> _symbols_stored;
-    bool _use_multimap = false;
-    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
-    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
-    std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
-    std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
-    std::map<std::string, std::vector<int>> _function_to_rangem;
-    std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
-    std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
-    std::map<std::size_t, bool> _index_to_bracketsm;
-    std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
-    std::map<char,std::vector<int>> _symbols_classificationm;
-    std::pair<int , char> _index_to_symbolsp;
-    std::map<int, char> _index_to_symbolsm;
-    std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
+    std::string _expression;
+    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
+    std::vector<std::string> _func = {"sin", "cos", "tan", "log", "ln", "sec", "cosec", "cotan", "arcos", "arcsin", "arctan"};
+    std::vector<char> _symbols = {'+', '-', '/', '*', '(', ')'};
+    bool isPolynomial;
+    bool _repeated_values;
+    bool _use_multimap;
+    std::pair<int, std::string> _index_to_functionp;
     std::map<int, std::string> _index_to_functionm;
-    std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
-    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
-    std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
-    std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
-    bool _repeated_values = false;
+    std::multimap<int, std::string> _index_to_functionmr;
+    std::pair<int, std::string> index_to_expressionp;
+    std::map<int, std::string> index_to_expression;
+    struct Argument {
+        bool function_on_function;
+        bool monomial_on_function;
+        bool function_on_monomial;
+        bool monomial_on_monomial;
+        bool double_subtraction;
+        std::string expression_a;
+        std::string expression_b;
+    };
+    Argument argument;
+    struct Polynomial {
+        std::string expression_a;
+        std::string expression_b;
+        std::vector<std::string> polynomial;
+        std::vector<int> parsed_arguments;
+        bool product_exists;
+        bool quotient_exists;
+        bool quotient_and_product_exist = false;
+        bool product_and_quotients_exist;
+        std::vector<int> add_sub_indices;
+        std::vector<int> parsed_argument;
+        std::vector<std::string> poly;
+        std::vector<std::tuple<int, int>> indices_tuples;
+        std::vector<std::tuple<std::string, std::string>> simple_arithmetic_operations;
+        std::vector<std::tuple<std::string, std::string>> quotients_and_products;
+        std::vector<std::tuple<int, int>> integers;
+    };
+    Polynomial polynomial;
     
 public:
     
-    void detect_functions();
-    bool isNumber(char &number);
+    std::string simplify_expression();
+    void set_operation(bool add_or_sub, std::string a_sign, std::string b_sign);
+    void insert_index_to_expression(int &index, std::string &expression);
+    bool hasExponent(const std::string & str);
     bool isSymbol(char &symbol);
-    bool initialise_classification(char symbol, int &index);
-    void set_index_to_symbols(char &symbol, int &index);
-    void insert_index_to_symbols();
-    void insert_index_to_function();
-    void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
-    void insert_symbol(char &symbol, int &index);
-    void fill_function_ranges();
-    std::string give_function(int &index);
-    std::vector<int> brackets_bag();
-    void find_scopes();
-    void find_functions_inside();
-    void fill_function_to_inside(std::tuple<int, int> &pivot);
-    std::string differentiate_argument(int &SB, int &EB, bool is_polynomial);
-    std::string differentiate();
-    std::string differentiate_function(std::string function);
+    bool isNumber(char &number);
     bool isFunction(std::string &pfunction);
-    void function_parser();
-    void test1();
-    void test2();
-    void test3();
-    derivative(std::string expression); //Copy constructor
-    derivative(derivative&&) = default; //Move constructor
-    derivative& operator = (const derivative&) & = default; //Move constructor
-    derivative& operator = (derivative&&) & = default; //Copy assignment operator
-    ~derivative(); //Destructor
+    void parse_argument();
+    void collect_exponents(std::deque<std::string> &exponents);
+    std::string simplification();
+    std::string perform_simplification();
+    std::string perform_polynomial_simplification_helper(bool simple_arithmetic);
+    std::string perform_mixed_simplification_helper(bool simple_arithmetic);
+    std::string get_exponent(std::string &monomial, bool isInteger);
+    std::string set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents);
+    std::string operate(char &sign);
+    std::vector<std::tuple<int, int>> gather_up_common_exponents(std::string &exponent_pivot);
+    void reset_operation_kind();
+    void set_quotients_and_products(std::vector<std::string> &expressionarr);
+    void set_simple_arithmetic();
+    bool quotient_exists();
+    bool product_exists();
+    simplifier(std::string &expression_argument);
 };
 
+simplifier::simplifier(std::string &expression_argument) {
+    _expression = expression_argument;
+}
 
-bool derivative::isNumber(char &number) {
+bool simplifier::isNumber(char &number) {
     auto pos = std::find(_numbers.begin(), _numbers.end(), number);
     return pos != _numbers.end();
 }
 
-bool derivative::isSymbol(char &symbol) {
-    auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
-    return pos != _symbols.end();
+bool simplifier::hasExponent(const std::string & str)
+{
+    const char c = '^';
+    return str.find(c) != std::string::npos;
 }
 
-void derivative::insert_index_to_function(){
-    for(int i = 0; i < _expressionarr.size(); i++){
-        auto isfunction = std::find(_func.begin(), _func.end(), _expressionarr[i]);
-        if(isfunction != _func.end()){
-            _index_to_functionp.first = i;
-            _index_to_functionp.second = _expressionarr[i];
-            if(!_repeated_values)
-                _index_to_functionm.insert(_index_to_functionp);
-            else
-                _index_to_functionmr.insert(_index_to_functionp);
-        }
-        else
-            continue;
-    }
+void simplifier::reset_operation_kind(){
+    argument.monomial_on_monomial = argument.monomial_on_monomial ? !argument.monomial_on_monomial : argument.monomial_on_monomial;
+    argument.monomial_on_function = argument.monomial_on_function ? !argument.monomial_on_function : argument.monomial_on_function;
+    argument.function_on_monomial = argument.function_on_monomial ? !argument.function_on_monomial : argument.monomial_on_function;
+    argument.function_on_function = argument.function_on_function ? !argument.function_on_function : argument.function_on_function;
 }
 
-
-bool derivative::initialise_classification(char symbol, int &index) {
-    std::vector<int> symbols;
-    auto is_stored = std::find(_symbols_stored.begin(), _symbols_stored.end(), symbol);
-    if(is_stored != _symbols_stored.end())
-        return false;
-    else if(symbols.empty() or is_stored == _symbols_stored.end()){
-        _symbols_stored.push_back(symbol);
-        symbols.push_back(index);
-        _symbols_classificationp.first = symbol;
-        _symbols_classificationp.second = symbols;
-        _symbols_classificationm.insert(_symbols_classificationp);
+bool simplifier::quotient_exists(){
+    auto find_quotient = std::find(polynomial.polynomial.begin(), polynomial.polynomial.end(), "/");
+    if (find_quotient != polynomial.polynomial.end()) {
+        polynomial.quotient_exists = true;
         return true;
-    }
-    return false;
-}
-
-void derivative::set_index_to_symbols(char &symbol, int &index){
-    _index_to_symbolsp.first = index;
-    _index_to_symbolsp.second = symbol;
-    _index_to_symbolsm.insert(_index_to_symbolsp);
-}
-
-void derivative::insert_index_to_symbols() {
-    for(int i = 0; i < _expressionarr.size(); i++){
-        auto issymbol = std::find(_symbols.begin(), _symbols.end(), _expressionarr[i][0]);
-        if(issymbol != _symbols.end()){
-            insert_symbol(_expressionarr[i][0], i); //We index the string so as tu turn it into a character
-        }
+    } else {
+        return false;
     }
 }
 
-void derivative::insert_symbol(char &symbol, int &index) {
-    set_index_to_symbols(symbol, index);
-    switch(symbol){
-            
-        case '+' : if(initialise_classification('+', index)); else _symbols_classificationm['+'].push_back(index); break;
-            
-        case '-' : if(initialise_classification('-', index)); else _symbols_classificationm['-'].push_back(index); break;
-            
-        case '*' : if(initialise_classification('*', index)); else _symbols_classificationm['*'].push_back(index); break;
-            
-        case '/' : if(initialise_classification('/', index)); else _symbols_classificationm['/'].push_back(index); break;
-            
-        default : ;
-            
-    }
-}
-
-
-std::string derivative::give_function(int &index){
-    //It will return a function given the index of its starting brackets
-    //It is given by calculating the distances between the brackets and all other functions lying behind them.
-    //The minimum distance is used to find the index to the function that matches the brackets
-    std::vector<int> distances;
-    int distance;
-    std::size_t at;
-    if(!_repeated_values){ //If there are no repeated values we iterate through a map
-        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _index_to_function map (see above)
-        for( indices iter = _index_to_functionm.begin(); iter != _index_to_functionm.end(); iter++){
-            distance = index - iter->first;
-            if(distance > 0)
-                distances.push_back(distance);
-            else
-                continue;
-        }
-    }
-    else{ //Else we iterate through a multimap
-        typedef std::multimap<int, std::string>::const_iterator indicesr;
-        for(indicesr iter = _index_to_functionmr.begin(); iter != _index_to_functionmr.end(); iter++){
-            distance = index - iter->first; //We calculate distance
-            if(distance > 0) //Filter out negative values
-                distances.push_back(distance); //and store the results in a vector
-            else
-                continue;
-        }
-    }
-    auto min = std::min_element(std::begin(distances), std::end(distances));
-    at = std::distance(distances.begin(), min);
-    return _index_to_functionm[index - distances[static_cast<int>(at)]]; //Function is returned from a hash table
-}
-
-
-std::vector<int> derivative::brackets_bag(){
-    //It collects the positions of starting brackets in order of appereance
-    //Find function returns the last index of a repeated element
-    //We need to use the find_nth function from boost and keep track of occurrences
-    std::vector<int> brackets_positions;
-    std::vector<std::vector<std::size_t>> positions;
-    boost::iterator_range<std::string::iterator> pos;
-    std::size_t bracket_index;
-    for(int i = 0; i < _expressionarr.size(); i++){
-        if(_expressionarr[i] == "(") {
-            brackets_positions.push_back(i); //We need to cast a size_t value to int
-            _index_to_bracketsp.first = i;
-            _index_to_bracketsp.second = true; //true stands for '('
-            _index_to_bracketsm.insert(_index_to_bracketsp);
-        }
-        else if(_expressionarr[i] == ")")  {
-            brackets_positions.push_back(i);
-            _index_to_bracketsp.first = i;
-            _index_to_bracketsp.second = false; //false stands for ')'
-            _index_to_bracketsm.insert(_index_to_bracketsp);
-        }
-    }
-    return brackets_positions;
-}
-
-void derivative::test3(){
-    typedef std::multimap<std::string, std::vector<int>>::const_iterator MapIterator;
-    for(MapIterator iter = _function_to_rangemr.begin(); iter != _function_to_rangemr.end(); iter++){
-        std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
-        typedef std::vector<int>::const_iterator VectorIterator;
-        for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
-            std::cout << " " << *vect_iter << std::endl;
-        }
-    }
-}
-
-
-void derivative::test2(){
-    typedef std::multimap<std::tuple<int, int>, std::tuple<int, int>>::const_iterator Iterator;
-    for(Iterator iter = _SE_to_OD.begin(); iter != _SE_to_OD.end(); iter++){
-        std::cout<<"SE: "<< std::get<0>(iter->first) << "\t" << std::get<1>(iter->first) << "\nOD: " << std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << std::endl;
-    }
-}
-
-void derivative::test1(){
-    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
-    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Inside: ";
-        for(const auto &i : iter->second){
-            std::cout<<std::get<0>(i) << "\t" << std::get<1>(i) << "\n" << std::endl;
-        }
-    }
-}
-
-
-void derivative::find_scopes(){
-    //It stores each function along with its argument range, defined by the brackets position in a map
-    Parser parse = Parser(_expression);
-    _expressionarr = parse.detect_functions();
-    _repeated_values = true;
-    _use_multimap = true;
-    insert_index_to_function();
-    insert_index_to_symbols();
-    std::vector<int> brackets_positions = brackets_bag();
-    std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
-    int single_bracket; //A bracket looking for a partner
-    std::vector<int> arguments_range; //It will serve as a temporary container to store values in a hash table
-    for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
-        if(!_index_to_bracketsm[brackets_positions[i]]){ //If brackets are ending brackets ')'
-            if(!_index_to_bracketsm[brackets_positions[i - 1]]){ //If its previous brackets are also ending brackets
-                pending_brackets.push(brackets_positions[i]); //We push it into a stack
-            } //The logic might seem counter-intuitive at first glance, keep in mind we are iterating backwards
-            else{
-                arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
-                arguments_range.push_back(brackets_positions[i - 1]); //We push the position for starting brackets
-                _function_to_rangep.first = give_function(brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
-                _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
-                if(!_repeated_values) //We store in a map
-                    _function_to_rangem.insert(_function_to_rangep);
-                else //We store in a multimap
-                    _function_to_rangemr.insert(_function_to_rangep);
-                arguments_range.clear(); //We clear for the next value to be stored
-            }
-        }
-        else if(!_index_to_bracketsm[brackets_positions[i + 1]]){ //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
-            ; //We ignore it, this way we make sure that when the next condition is met there will be a '(' to ')' relationship
-        }
-        else { //If our current bracket is a starting bracket '(' i.e if we have '()'
-            single_bracket = pending_brackets.top(); //We get our previously stored value from the stack
-            arguments_range.push_back(single_bracket); //We push the position for ending brackets
-            arguments_range.push_back(brackets_positions[i]); //We push the position for starting brackets
-            pending_brackets.pop(); //And free our friend from the stack
-            _function_to_rangep.first = give_function(single_bracket); //Values for ending and starting brackets are swapped when being stored
-            _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
-            if (!_repeated_values) //We store in a map
-                _function_to_rangem.insert(_function_to_rangep);
-            else //We store in a multimap
-                _function_to_rangemr.insert(_function_to_rangep);
-            arguments_range.clear();
-        }
-    }
-}
-
-
-void derivative::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD){
-    _SE_to_ODp.first = SE;
-    _SE_to_ODp.second = OD;
-    _SE_to_OD.insert(_SE_to_ODp);
-}
-
-
-bool derivative::isFunction(std::string &pfunction) {
+bool simplifier::isFunction(std::string &pfunction) {
     auto isFunction = std::find(_func.begin(), _func.end(), pfunction);
     return isFunction != _func.end();
 }
 
+void simplifier::set_operation(bool add_or_sub, std::string a_sign, std::string b_sign){
+    std::string temp;
+    if(a_sign == "-" and b_sign == "+"){
+        add_or_sub = false;
+        temp = argument.expression_a;
+        argument.expression_b = argument.expression_a;
+        argument.expression_b = temp;
+    } else if(a_sign == "-" and b_sign == "-"){
+        add_or_sub = true;
+        argument.double_subtraction = true;
+    } else if(a_sign == "+" and b_sign == "+"){
+        add_or_sub = true;
+    } else if(a_sign == "+" and b_sign == "-"){
+        add_or_sub = false;
+    }
+}
 
-void derivative::fill_function_to_inside(std::tuple<int, int> &pivot){
-    int S1 = std::get<0>(pivot);
-    int E1 = std::get<1>(pivot);
-    int S2;
-    int E2;
-    std::vector<std::tuple<int, int>> functions_inside;
-    bool inside = false;
-    _function_to_inside_functionp.first = pivot;
-    for (auto &i : _function_ranges){
-        S2 = std::get<0>(i);
-        E2 = std::get<1>(i);
-        if(S1 < S2 and E1 > E2){
-            inside = true;
-            functions_inside.push_back(std::make_tuple(S2, E2));
+std::string simplifier::operate(char &sign) {
+    bool double_subtraction = false;
+    algebraic_manipulation algebraic_operation = algebraic_manipulation(double_subtraction);
+    if(sign == '*') {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_monomial) {
+            ;
+        } else if(argument.monomial_on_function) {
+            ;
+        } else if(argument.monomial_on_monomial) {
+            algebraic_operation.mulMonomials(argument.expression_a, argument.expression_b);
         }
-        else
+    } else if(sign == '/') {
+        if(argument.function_on_function) {
+            ;
+        } else if(argument.function_on_monomial) {
+            ;
+        } else if(argument.monomial_on_function) {
+            ;
+        } else if(argument.monomial_on_monomial) {
+            ;//TODO: Write a method that computes the quotient of two monomials
+        }
+    }
+}
+
+bool simplifier::product_exists(){
+    auto find_product = std::find(polynomial.polynomial.begin(), polynomial.polynomial.end(), "*");
+    if (find_product != polynomial.polynomial.end()) {
+        polynomial.product_exists = true;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void simplifier::set_quotients_and_products(std::vector<std::string> &expressionarr){
+    for (int i = 0; i < expressionarr.size(); i++) {
+        if (expressionarr[i][0] == '*' or expressionarr[i][0] == '/') {
+            polynomial.quotients_and_products.push_back(std::make_tuple(expressionarr[i - 1], expressionarr[i + 1]));
+        }
+        continue;
+    }
+}
+
+void simplifier::set_simple_arithmetic(){
+    typedef std::tuple<int, int> index_a_b;
+    int count = 0;
+    for (int i = 0; i <= _expressionarr.size(); i++) {
+        if (_expressionarr[i][0] == '+' or _expressionarr[i][0] == '-') {
+            polynomial.indices_tuples.push_back(std::make_tuple(i - 1, i + 1));
+            polynomial.simple_arithmetic_operations.push_back(std::make_tuple(_expressionarr[i - 1], _expressionarr[i + 1]));
+        }
+        continue;
+    }
+    for(index_a_b iab : polynomial.indices_tuples){
+        count += 1;
+        if(count == polynomial.indices_tuples.size()) {
+            polynomial.add_sub_indices.push_back(std::get<0>(iab));
+            polynomial.add_sub_indices.push_back(std::get<1>(iab));
+        }
+        else{
+            polynomial.add_sub_indices.push_back(std::get<0>(iab));
+        }
+    }
+}
+
+
+std::string simplifier::perform_simplification(){
+    std::string simplification;
+    std::string simple_arithmetic_simplification;
+    std::string quotient_products_simplification;
+    if (polynomial.product_and_quotients_exist){
+        set_quotients_and_products(_expressionarr);
+        quotient_products_simplification = isPolynomial ?  perform_polynomial_simplification_helper(false) : perform_mixed_simplification_helper(false);
+        set_simple_arithmetic();
+        simple_arithmetic_simplification = isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
+        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+    } else if (polynomial.product_exists) {
+        set_quotients_and_products(_expressionarr);
+        quotient_products_simplification = perform_polynomial_simplification_helper(false);
+        set_simple_arithmetic();
+        simple_arithmetic_simplification= isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
+        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+    } else if (polynomial.quotient_exists){
+        set_quotients_and_products(_expressionarr);
+        quotient_products_simplification = perform_polynomial_simplification_helper(false);
+        set_simple_arithmetic();
+        simple_arithmetic_simplification = isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
+        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+    } else{
+        set_simple_arithmetic();
+        simplification = perform_polynomial_simplification_helper(true);
+    }
+    return simplification;
+}
+
+bool simplifier::isSymbol(char &symbol) {
+    auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
+    return pos != _symbols.end();
+}
+
+std::string simplifier::get_exponent(std::string &monomial, bool isInteger){
+    typedef std::tuple<int, int> a_b_int;
+    int count = 0;
+    auto found_exponent = monomial.find('^');
+    std::string exponent;
+    if(found_exponent != std::string::npos){
+        exponent = monomial.substr(found_exponent - 1, monomial.size());
+    } else if(monomial.back() == 'x'){
+        exponent = "x";
+    } else if(monomial.back() == '+' or monomial.back() == '-' or monomial.back() == '*' or monomial.back() == '/'){
+        exponent = "null";
+    }else{
+        exponent = "integer";
+        isInteger = true;
+    }
+    return exponent;
+}
+
+void simplifier::collect_exponents(std::deque<std::string> &exponents){ //Breakpoint
+    std::string exponent;
+    bool isInteger = false;
+    for(int i = 0; i <= polynomial.simple_arithmetic_operations.size(); i++){
+        exponent = get_exponent(std::get<0>(polynomial.simple_arithmetic_operations[i]), isInteger);
+        exponents.push_back(exponent);
+    }
+    std::sort(exponents.begin(), exponents.end());
+    exponents.erase(std::unique(exponents.begin(), exponents.end()), exponents.end());
+    for(std::string exponent : exponents){
+        std::cout<<exponent<<std::endl;
+    }
+}
+
+std::vector<std::tuple<int, int>> simplifier::gather_up_common_exponents(std::string &exponent_pivot){
+    bool isInteger;
+    int count = 0;
+    int integer_count = 0;
+    int a_index;
+    int b_index;
+    int int_a_index;
+    int int_b_index;
+    std::string exponent;
+    std::vector<std::tuple<int, int>> common_exponents;
+    typedef std::tuple<std::string, std::string> a_and_b;
+    typedef std::tuple<int, int> indices_pair;
+    auto last = std::unique(polynomial.parsed_argument.begin(), polynomial.parsed_argument.end());
+    polynomial.parsed_argument.erase(last, polynomial.parsed_argument.end());
+    for(int index : polynomial.parsed_argument) {
+        isInteger = false;
+        if (get_exponent(index_to_expression[index], isInteger) == exponent_pivot) {
+            if (isInteger) {
+                if (integer_count == 0) {
+                    int_a_index = index;
+                    integer_count += 1;
+                } else if (integer_count == 1) {
+                    int_b_index = index;
+                    polynomial.integers.push_back(std::make_tuple(int_a_index, int_b_index));
+                    integer_count += 1;
+                } else
+                    integer_count = 0;
+            }
+            if (count == 0) {
+                a_index = index;
+                count += 1;
+            } else if (count == 1) {
+                b_index = index;
+                common_exponents.push_back(std::make_tuple(a_index, b_index));
+                count += 1;
+            } else {
+                count = 0;
+            }
+        } else
             continue;
     }
-    if(!inside)
-        functions_inside.push_back(pivot);
-    else
+    return common_exponents;
+}
+
+std::string simplifier::set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents){
+    typedef std::tuple<int, int> ab;
+    int count = 0;
+    std::vector<int> already_processed_operations; //Stores indices of already processed monomials
+    bool add_or_sub;
+    std::string result;
+    std::string a_sign;
+    std::string b_sign;
+    bool double_negative;
+    for(ab a_b : common_exponents) {
+        count += 1;
+        if (result.empty()) {
+            a_sign = index_to_expression[std::get<0>(a_b) - 1];
+            if (a_sign.empty())
+                a_sign = "+";
+            b_sign = index_to_expression[std::get<1>(a_b) - 1];
+            polynomial.expression_a = index_to_expression[std::get<0>(a_b)];
+            polynomial.expression_b = index_to_expression[std::get<1>(a_b)];
+            std::cout << a_sign << polynomial.expression_a << std::endl;
+            std::cout << b_sign << polynomial.expression_b << std::endl;
+            //We call the add or sub monomials function here
+        } else {
+            a_sign = index_to_expression[std::get<0>(a_b) - 1];
+            b_sign = index_to_expression[std::get<1>(a_b) - 1];
+            polynomial.expression_a = result;
+            polynomial.expression_b = index_to_expression[std::get<1>(a_b)];
+            //We call the add or sub monomials function here
+        }
+    }
+    //if(count == common_exponents.size()){ TODO: Test this mess
+    //;
+    //}
+    common_exponents.clear();
+    return result;
+}
+
+void simplifier::parse_argument() {
+    std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> tokens;
+    Parser parser = Parser(_expression);
+    _expressionarr = parser.detect_functions();
+    tokens = parser.parse();
+    polynomial.parsed_argument = std::get<0>(tokens);
+    index_to_expression = std::get<1>(tokens);
+    polynomial.poly = std::get<2>(tokens);
+    _index_to_functionm = std::get<3>(tokens);
+}
+
+std::string simplifier::perform_polynomial_simplification_helper(bool simple_arithmetic){
+    std::string result;
+    std::deque<std::string> exponents;
+    std::vector<std::string> exponents_already_processed;
+    std::vector<std::tuple<int, int>> common_exponents;
+    std::string exponent_pivot;
+    std::string simplification_result;
+    std::string derivative;
+    if(simple_arithmetic){
+        collect_exponents(exponents);
+        if(exponents.empty()){
+            ;//operate_integers();
+        } else {
+            for(std::string exponent : exponents){
+                exponent_pivot = exponent;
+                common_exponents = gather_up_common_exponents(exponent_pivot);
+                set_subtractions_additions(common_exponents);
+                common_exponents.clear();
+            }
+            if(!exponents.empty()){
+                ;//operate_integers();
+            }
+        }
+    } else {
         ;
-    _function_to_inside_functionp.second = functions_inside;
-    _function_to_inside_functionm.insert(_function_to_inside_functionp);
-}
-
-void derivative::find_functions_inside() { //Refactoring needed
-    bool inside;
-    int depth;
-    int order;
-    std::vector<std::tuple<int, int>> order_depth;
-    std::tuple<int, int> pivot;
-    while(!_function_ranges.empty()){
-        depth = 0;
-        order = 0;
-        pivot = _function_ranges.front();
-        _function_ranges.pop_front();
-        if(!_function_to_inside_functionm.empty()){
-            typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator MapIterator; //We calculate the depth by checking if the function exists in other functions
-            for(MapIterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-                auto found = std::find(iter->second.begin(), iter->second.end(), pivot);
-                if(found != iter->second.end()){
-                    inside = true;
-                    depth += 1;
-                }
-                else
-                    continue;
-            }
-            if(!inside){ //If function is not inside any function we have depth 0
-                //If it is level 0 we can check its order without caring about other functions being stored previously
-                for(int i = 0; i < order_depth.size(); i++){
-                    if(std::get<0>(order_depth[i]) == 0)
-                        order = std::get<1>(order_depth[i]) + 1;
-                    else
-                        continue;
-                }
-                order_depth.push_back(std::make_tuple(depth, order));
-                insert_SE_OD(pivot, std::make_tuple(depth, order));
-            }
-            else { //If it is not inside, the order_depth vector has already been filled
-                for (unsigned i = (int) order_depth.size(); i-- > 0;) { //We make sure that the new tuple is stored with the right order value, comparing with previously stored tuples
-                    if(std::get<0>(order_depth[i]) > depth){
-                        continue;
-                    }
-                    else if(std::get<0>(order_depth[i]) < depth){ //If previous value has lower depth, our new order value will always be 1
-                        order = 1;
-                        order_depth.push_back(std::make_tuple(depth, order));
-                        insert_SE_OD(pivot, std::make_tuple(depth, order));
-                        break;
-                    }
-                    else{
-                        order = std::get<1>(order_depth[i]) + 1;
-                        order_depth.push_back(std::make_tuple(depth, order));
-                        insert_SE_OD(pivot, std::make_tuple(depth, order));
-                        break;
-                    }
-                }
-            }
-        }else{
-            order = 1;
-            order_depth.push_back(std::make_tuple(depth, order));
-            insert_SE_OD(pivot, std::make_tuple(depth, order));
-        }
-        fill_function_to_inside(pivot);
-    }
-}
-
-void derivative::fill_function_ranges() {
-    std::vector<int> indices_buffer;
-    if(!_repeated_values){
-        typedef std::map<std::string, std::vector<int>>::const_iterator iterator;
-        for(iterator it = _function_to_rangem.begin(); it != _function_to_rangem.end(); it++){
-            indices_buffer.push_back(it->second[1]);
-        }
-        std::sort(indices_buffer.begin(), indices_buffer.end());
-        for(int sindex : indices_buffer){
-            for(iterator it = _function_to_rangem.begin(); it != _function_to_rangem.end(); it++){
-                if (it->second[1] == sindex){
-                    _function_ranges.push_back(std::make_tuple(it->second[1], it->second[0]));
-                    break;
-                } else
-                    continue;
-            }
-        }
-    }
-    else {
-        typedef std::multimap<std::string, std::vector<int>>::const_iterator iteratorr; //refer to https://stackoverflow.com/questions/29535125/access-key-from-values-and-value-from-key
-        for (iteratorr it = _function_to_rangemr.begin(); it != _function_to_rangemr.end(); it++) {
-            indices_buffer.push_back(it->second[1]);
-        }
-        std::sort(indices_buffer.begin(), indices_buffer.end());
-        for(int sindex : indices_buffer) {
-            for (iteratorr it = _function_to_rangemr.begin(); it != _function_to_rangemr.end(); it++) {
-                if (it->second[1] == sindex) {
-                    _function_ranges.push_back(std::make_tuple(it->second[1], it->second[0]));
-                    break;
-                } else
-                    continue;
-            }
-        }
-    }
-}
-
-void derivative::function_parser(){
-    std::vector<std::tuple<int, int>> order_depth;
-    std::tuple<int, int> pivot;
-    fill_function_ranges();
-    find_functions_inside();
-    test1();
-    test2();
-    test3();
-}
-
-std::string derivative::differentiate_argument(int &SB, int &EB, bool is_Polynomial){
-    std::string argument;
-    std::string derivative;
-    for(int i = SB; i < EB; i++){
-        argument += _expressionarr[i];
-    }
-    return argument;
-    //We create the argument object here,
-    //argument argument = argument(argument, is_Polynomial);
-    //derivative = argument.differentiate();
-    //return derivative;
-}
-
-//Welcome to hell...
-std::string derivative::differentiate() {
-    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
-    std::vector<std::tuple<int, int>> functions_buffer;
-    std::pair<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_function_to_derivativep;
-    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_function_to_derivative;
-    int SB;
-    int EB;
-    std::string dfx;
-    std::string dgx;
-    std::string function;
-    std::string derivative;
-    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-        if(iter->first == iter->second.back()){ //If the function only has polynomials inside
-            functions_buffer.push_back(iter->first);
-        }
-        else
-            continue;
-    }
-    for(auto &func : functions_buffer){
-        SB = std::get<0>(func);
-        EB = std::get<1>(func);
-        function = give_function(SB);
-        dfx = differentiate_function(function);
-        dgx = differentiate_argument(SB, EB, true); //There is only one level where there are polynomials, so we don't need to write a routine that finds that out
-        derivative = dfx + '*' + dgx;
-        scope_to_function_to_derivativep.first = func;
-        scope_to_function_to_derivativep.second = std::make_tuple(function, derivative);
-        scope_to_function_to_derivative.insert(scope_to_function_to_derivativep);
     }
     return derivative;
 }
 
-
-derivative::derivative(std::string expression){
-    _expression = expression;
+std::string simplifier::perform_mixed_simplification_helper(bool simple_arithmetic){
+    ;
 }
 
-derivative::~derivative(){
-    
+std::string simplifier::simplification(){
+    std::string simplification;
+    if(quotient_exists() and product_exists())
+        polynomial.quotient_and_product_exist = true;
+    simplification = perform_simplification();
+    return simplification;
 }
 
-std::string derivative::differentiate_function(std::string function) {
-    return std::string();
+std::string simplifier::simplify_expression(){
+    parse_argument();
+    return simplification();
 }
 
-class Argument {
+class Argument { //parse_argument has to parse the simplification of the expression, before proceeding to perform the derivatives
     
     
 private:
     
     bool _repeated_values;
     bool _use_multimap;
+    bool isPolynomial;
     std::string _argument;
     std::vector<std::string> _argumentarr;
     std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
     std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
     std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
-    std::map<std::size_t, bool> _index_to_bracketsm;
-    std::map<char,std::vector<int>> _symbols_classificationm;
     std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _index_to_functionm;
     std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-    std::pair<int, std::string> _index_to_resultp;
-    std::map<int, std::string> _index_to_result;
     struct argument{ //TODO check gx inside differential and find out how to handle the chain rule for polynomials and functions altogether inside functions
         bool product_rule;
         bool quotient_rule;
@@ -960,11 +968,7 @@ private:
         bool polynomial_on_function = false;
         bool function_on_polynomial = false;
         bool function_on_function = false;
-        bool addition_or_subtraction = false;
-        bool equivalent_exponentiation;
-        bool both_integers;
-        bool non_exponentiated_monomials;
-        bool double_subtraction = false;
+        bool double_subtraction;
         std::vector<std::tuple<int, int>> integers;
         std::deque<std::tuple<int, int>> indices_tuples;
         std::deque<std::tuple<std::string, std::string>> simple_arithmetic_operations;
@@ -975,7 +979,6 @@ private:
         std::vector<std::string> argument;
         std::string sign;
         std::vector<int> symbols; //Symbol indices
-        std::pair<int, std::string> index_to_expressionp;
         std::map<int, std::string> index_to_expression;
         std::vector<int> parsed_argument;
     };
@@ -983,35 +986,31 @@ private:
     
 public:
     
-    void detect_functions();
     bool isNumber(char &number);
     bool isSymbol(std::string symbol);
     std::string differentiate();
     std::string differentiate_monomial(std::string &monomial);
     bool hasExponent(const std::string & str);
-    std::string operate(char &sign);
     bool isFunction(std::string &pfunction);
     void parse_argument();
     void insert_index_to_function();
     std::string get_exponent(std::string &monomial, bool isExponent);
     void collect_exponents(std::deque<std::string> &exponents);
-    void insert_index_to_expression(int &index, std::string &expression);
     bool product_exists();
     bool expression_is_function(char &expression);
     bool quotient_exists();
-    char set_sign(int &count);
     void fill_simple_arithmetic();
     void fill_quotients_and_products();
-    std::string differentiation();
-    std::string perform_differentiation_helper(bool simple_arithmetic);
     std::string perform_differentiation();
-    void reset_operation_kind();
+    std::string perform_mixed_differentiation_helper();
+    std::string differentiation();
+    std::string perform_polynomial_differentiation_helper(bool simple_arithmetic);
     void assign_ab(std::deque<std::tuple<std::string, std::string>> &operations);
     std::vector<std::tuple<int, int>> gather_up_common_exponents(std::string &exponent_pivot);
     std::string set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents);
-    void set_operation(bool add_or_sub, std::string a_sign, std::string b_sign);
     std::string operate_integers();
-    Argument(std::string &argument);
+    Argument(std::string &argument, std::deque<std::string> &derivatives_inside);
+    
 };
 
 bool Argument::isNumber(char &number) {
@@ -1048,61 +1047,7 @@ void Argument::insert_index_to_function(){
 }
 
 void Argument::parse_argument() {
-    std::string function;
-    std::string monomial;
-    bool catch_argument = false;
-    std::string symbol;
-    int index = 0;
-    Parser parse = Parser(_argument);
-    _argumentarr = parse.detect_functions();
-    _use_multimap = true;
-    insert_index_to_function();
-    for(int i = 0; i < _argumentarr.size(); i++){
-        //We prepare a map, mapping indices to expressions
-        if(_argumentarr[i] == "(" or _argumentarr[i] == ")"){
-            if(_argumentarr[i] == "(")
-                catch_argument = true;
-            else
-                catch_argument = false;
-        }
-        else if(isFunction(_argumentarr[i])) {
-            function = _argumentarr[i] + "(" + ")";
-            std::cout<<"Function: "<<function<<std::endl;
-        }
-        else if(!isSymbol(_argumentarr[i]) and !isFunction(_argumentarr[i]) and catch_argument){
-            std::string monomial_inside = _argumentarr[i];
-            std::cout<<"Monomial inside: "<<monomial_inside<<std::endl;
-            auto starting_brackets = function.find(")");
-            function.insert(starting_brackets, monomial_inside); //We insert the argument
-            insert_index_to_expression(index, function);
-            index += 1;
-        }
-        else if(!isSymbol(_argumentarr[i]) and !isFunction(_argumentarr[i]) and !catch_argument) {
-            monomial = _argumentarr[i];
-            std::cout<<"Monomial: "<<monomial<<std::endl;
-            insert_index_to_expression(index, monomial);
-            index += 1;
-        }
-        else if(isSymbol(_argumentarr[i])){
-            symbol = _argumentarr[i];
-            std::cout<<"Symbol: "<<symbol<<std::endl;
-            insert_index_to_expression(index, symbol);
-            index += 1;
-        }
-    }
-    typedef std::map<int, std::string>::const_iterator it;
-    it iterator;
-    for(iterator = argument.index_to_expression.begin(); iterator != argument.index_to_expression.end(); iterator++){
-        argument.parsed_argument.push_back(iterator->first);
-        argument.argument.push_back(iterator->second);
-    }
-}
-
-void Argument::insert_index_to_expression(int &index, std::string &expression){
-    argument.index_to_expressionp.first = index;
-    argument.index_to_expressionp.second = expression;
-    argument.index_to_expression.insert(argument.index_to_expressionp);
-    argument.parsed_argument.push_back(index);
+    ;
 }
 
 bool Argument::expression_is_function(char &expression){
@@ -1114,40 +1059,6 @@ bool Argument::expression_is_function(char &expression){
 // 6x - [(4cos(3x) * 7 + 7x * 4sin(3x)) * (40x^2) * (6sin(5x) + 3x * 2cos(5x)) * (20x^2) * (20x) * (63x)] //Also having, n product rules, the resulting expression is going to be splitted into n subexpressions with additions
 //If both are functions //Given a number of possible operations n, there will always be a certain number of possible product rules, and therefore possible expansions
 //3x + 2x - [(4sin(3x) * 7x) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)]
-
-
-std::string Argument::operate(char &sign) {
-    bool double_subtraction = false;
-    algebraic_manipulation algebraic_operation = algebraic_manipulation(double_subtraction);
-    if(sign == '*') {
-        if(argument.function_on_function) {
-            ;
-        } else if(argument.function_on_polynomial) {
-            ;
-        } else if(argument.polynomial_on_function) {
-            ;
-        } else if(argument.polynommial_on_polynomial) {
-            algebraic_operation.mulMonomials(argument.expression_a, argument.expression_b);
-        }
-    } else if(sign == '/') {
-        if(argument.function_on_function) {
-            ;
-        } else if(argument.function_on_polynomial) {
-            ;
-        } else if(argument.polynomial_on_function) {
-            ;
-        } else if(argument.polynommial_on_polynomial) {
-            ;//TODO: Write a method that computes the quotient of two monomials
-        }
-    }
-}
-
-void Argument::reset_operation_kind(){
-    argument.polynommial_on_polynomial = argument.polynommial_on_polynomial ? !argument.polynommial_on_polynomial : argument.polynommial_on_polynomial;
-    argument.polynomial_on_function = argument.polynomial_on_function ? !argument.polynomial_on_function : argument.polynomial_on_function;
-    argument.function_on_polynomial = argument.function_on_polynomial ? !argument.function_on_polynomial : argument.polynomial_on_function;
-    argument.function_on_function = argument.function_on_function ? !argument.function_on_function : argument.function_on_function;
-}
 
 std::string Argument::get_exponent(std::string &monomial, bool isInteger){
     typedef std::tuple<int, int> a_b_int;
@@ -1186,7 +1097,7 @@ void Argument::assign_ab(std::deque<std::tuple<std::string, std::string>> &opera
     argument.expression_b = std::get<1>(operations.front());
     operations.pop_front();
 }
-//TODO: Get your shit done here
+
 std::vector<std::tuple<int, int>> Argument::gather_up_common_exponents(std::string &exponent_pivot){
     bool isInteger = false;
     int count = 0;
@@ -1232,23 +1143,6 @@ std::vector<std::tuple<int, int>> Argument::gather_up_common_exponents(std::stri
             continue;
     }
     return common_exponents;
-}
-
-void Argument::set_operation(bool add_or_sub, std::string a_sign, std::string b_sign){
-    std::string temp;
-    if(a_sign == "-" and b_sign == "+"){
-        add_or_sub = false;
-        temp = argument.expression_a;
-        argument.expression_b = argument.expression_a;
-        argument.expression_b = temp;
-    } else if(a_sign == "-" and b_sign == "-"){
-        add_or_sub = true;
-        argument.double_subtraction = true;
-    } else if(a_sign == "+" and b_sign == "+"){
-        add_or_sub = true;
-    } else if(a_sign == "+" and b_sign == "-"){
-        add_or_sub = false;
-    }
 }
 
 std::string Argument::set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents){
@@ -1312,58 +1206,12 @@ std::string Argument::operate_integers(){
     }
 }
 
-std::string Argument::perform_differentiation_helper(bool simple_arithmetic){ //TODO: Write a function that keeps track of indices so that the derivatives of all expressions will be returned in order
-    std::string result;
-    std::deque<std::string> exponents;
-    std::vector<std::string> exponents_already_processed;
-    std::vector<std::tuple<int, int>> common_exponents;
-    std::string exponent_pivot;
-    std::string simplification_result;
-    std::string derivative;
-    if(simple_arithmetic){
-        collect_exponents(exponents);
-        if(exponents.empty()){
-            operate_integers();
-        } else {
-            for(std::string exponent : exponents){
-                exponent_pivot = exponent;
-                common_exponents = gather_up_common_exponents(exponent_pivot);
-                set_subtractions_additions(common_exponents);               common_exponents.clear();
-            }
-            if(!exponents.empty()){
-                operate_integers();
-            }
-        }
-    } else{ //We perform quotient or product rule
-        while(!argument.quotients_and_products.empty()) {
-            reset_operation_kind();
-            assign_ab(argument.quotients_and_products);
-            if (!isNumber(argument.expression_a.back()) and !isNumber(argument.expression_b.back())) {
-                std::cout << "Functions times function" << std::endl;
-                std::cout << argument.expression_a << std::endl;
-                std::cout << argument.expression_b << std::endl;
-            } else if (isNumber(argument.expression_a.back()) and isNumber(argument.expression_b.back())) { //3x * 2x or 3 * 2
-                //else we have an operation between two polynomials which always results in a single expression, note: it could also be two numbers !
-                std::cout << "Operation between polynomials"
-                << std::endl; //Add monomials, subtract monomials and mulMonomials here
-                std::cout << argument.expression_a << std::endl;
-                std::cout << argument.expression_b << std::endl;
-            } else if (expression_is_function(argument.expression_a.back()) and expression_is_function(argument.expression_b.back())) {//sin(x) * cos(x)
-                std::cout << "Functions operation" << std::endl;
-                std::cout << argument.expression_a << std::endl;
-                std::cout << argument.expression_b << std::endl;
-            } else if (!isNumber(argument.expression_a.back()) and (isNumber(argument.expression_b.back()) and !expression_is_function(argument.expression_b.back()))) { //Function times polynomial
-                std::cout << "Function times polynomial" << std::endl;
-                std::cout << argument.expression_a << std::endl;
-                std::cout << argument.expression_b << std::endl;
-            } else if ((isNumber(argument.expression_a.back()) and !expression_is_function(argument.expression_a.back())) and !isNumber(argument.expression_b.back())) { //Polynomial times function
-                std::cout << "Polynomial times function" << std::endl;
-                std::cout << argument.expression_a << std::endl;
-                std::cout << argument.expression_b << std::endl;
-            }
-        }
-    }
-    return derivative;
+std::string Argument::perform_polynomial_differentiation_helper(bool simple_arithmetic){ //TODO: Write a function that keeps track of indices so that the derivatives of all expressions will be returned in order
+    ;
+}
+
+std::string Argument::perform_mixed_differentiation_helper(){
+    ;
 }
 
 std::string Argument::differentiation() {
@@ -1406,27 +1254,31 @@ void Argument::fill_quotients_and_products(){
     }
 }
 
-std::string Argument::perform_differentiation(){
+std::string Argument::perform_differentiation(){ //TODO: Correct variables here
     std::string derivative;
     std::string simple_arithmetic_derivative;
+    std::string quotient_products_derivative;
     if (argument.product_and_quotients_exist){
         fill_quotients_and_products();
-        simple_arithmetic_derivative = perform_differentiation_helper(false);
+        quotient_products_derivative = isPolynomial ?  perform_polynomial_differentiation_helper(false) : perform_mixed_differentiation_helper();
         fill_simple_arithmetic();
-        derivative = simple_arithmetic_derivative + perform_differentiation_helper(true);
+        simple_arithmetic_derivative = isPolynomial ? perform_polynomial_differentiation_helper(true) : perform_mixed_differentiation_helper();
+        derivative = simple_arithmetic_derivative + quotient_products_derivative;
     } else if (argument.product_exists) {
         fill_quotients_and_products();
-        simple_arithmetic_derivative = perform_differentiation_helper(false);
+        quotient_products_derivative = perform_polynomial_differentiation_helper(false);
         fill_simple_arithmetic();
-        derivative = simple_arithmetic_derivative + perform_differentiation_helper(true);
+        simple_arithmetic_derivative = isPolynomial ? perform_polynomial_differentiation_helper(true) : perform_mixed_differentiation_helper();
+        derivative = simple_arithmetic_derivative + simple_arithmetic_derivative;
     } else if (argument.quotient_exists){
         fill_quotients_and_products();
-        simple_arithmetic_derivative = perform_differentiation_helper(false);
+        quotient_products_derivative = perform_polynomial_differentiation_helper(false);
         fill_simple_arithmetic();
-        derivative = simple_arithmetic_derivative + perform_differentiation_helper(true);
+        simple_arithmetic_derivative = isPolynomial ? perform_polynomial_differentiation_helper(true) : perform_mixed_differentiation_helper();
+        derivative = simple_arithmetic_derivative + simple_arithmetic_derivative;
     } else{
         fill_simple_arithmetic();
-        derivative = perform_differentiation_helper(true);
+        derivative = perform_polynomial_differentiation_helper(true);
     }
     return derivative;
 }
@@ -1517,14 +1369,566 @@ bool Argument::isFunction(std::string &pfunction) {
     return isFunction != _func.end();
 }
 
-Argument::Argument(std::string &argument){
+Argument::Argument(std::string &argument, std::deque<std::string> &derivatives_inside){
+    isPolynomial = derivatives_inside.empty() ? true : false;
     _argument = argument;
+}
+
+
+class expression{
+    
+    
+private:
+    
+    std::string _expression;
+    std::deque<std::tuple<int, int>> _function_ranges;
+    std::vector<std::string> _expressionarr;
+    std::vector<char> _symbols_stored;
+    bool _use_multimap = false;
+    std::vector<int> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'x', 'y', 'z', '^'};
+    std::vector<int> _symbols = {'+', '-', '*', '/', '(', ')'};
+    std::vector<std::string> _func = {"log", "ln", "sin", "cos", "tan", "sec", "cosec", "cotan", "e", "arcsin", "arcos", "arctan"};
+    std::pair<std::string, std::vector<int>> _function_to_rangep; //Stores function given as a string and a vector containing the chain rule iterations and the indices for the argument
+    std::map<std::string, std::vector<int>> _function_to_rangem;
+    std::multimap<std::string, std::vector<int>> _function_to_rangemr; //If there are repeated values
+    std::pair<std::size_t, bool> _index_to_bracketsp; //Stores position of brackets and a boolean (false for '(' true for ')')
+    std::map<std::size_t, bool> _index_to_bracketsm;
+    std::pair<char, std::vector<int>> _symbols_classificationp; //Keys are the symbols, they are mapped to their indices
+    std::map<char,std::vector<int>> _symbols_classificationm;
+    std::pair<int , char> _index_to_symbolsp;
+    std::map<int, char> _index_to_symbolsm;
+    std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
+    std::map<int, std::string> _index_to_functionm;
+    std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
+    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
+    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
+    std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
+    std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
+    std::vector<std::tuple<int, int>> _sorted_SB_EB;
+    bool _repeated_values = false;
+    
+public:
+    
+    bool isNumber(char &number);
+    bool isSymbol(char &symbol);
+    void subvector_to_string(std::tuple<int, int> &indices, std::string &expression); //TODO: Test this mess
+    bool initialise_classification(char symbol, int &index);
+    void set_index_to_symbols(char &symbol, int &index);
+    void insert_index_to_symbols();
+    void insert_index_to_function();
+    void insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD);
+    void insert_symbol(char &symbol, int &index);
+    void fill_function_ranges();
+    std::string give_function(int &index);
+    std::vector<int> brackets_bag();
+    void find_scopes();
+    void find_functions_inside();
+    void fill_function_to_inside(std::tuple<int, int> &pivot);
+    std::string differentiate_argument(int &SB, int &EB, bool is_polynomial);
+    std::string differentiate();
+    std::string differentiate_function(std::string function);
+    void sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector);
+    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer);
+    void function_parser();
+    void test1();
+    void test2();
+    void test3();
+    void sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue);
+    void differentiate_at_same_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative);
+    expression(std::string expression); //Copy constructor
+    expression(expression&&) = default; //Move constructor
+    expression& operator = (const expression&) & = default; //Move constructor
+    expression& operator = (expression&&) & = default; //Copy assignment operator
+    ~expression(); //Destructor
+};
+
+bool expression::isNumber(char &number) {
+    auto pos = std::find(_numbers.begin(), _numbers.end(), number);
+    return pos != _numbers.end();
+}
+
+bool expression::isSymbol(char &symbol) {
+    auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
+    return pos != _symbols.end();
+}
+
+void expression::insert_index_to_function(){
+    for(int i = 0; i < _expressionarr.size(); i++){
+        auto isfunction = std::find(_func.begin(), _func.end(), _expressionarr[i]);
+        if(isfunction != _func.end()){
+            _index_to_functionp.first = i;
+            _index_to_functionp.second = _expressionarr[i];
+            if(!_repeated_values)
+                _index_to_functionm.insert(_index_to_functionp);
+            else
+                _index_to_functionmr.insert(_index_to_functionp);
+        }
+        else
+            continue;
+    }
+}
+
+bool expression::initialise_classification(char symbol, int &index) {
+    std::vector<int> symbols;
+    auto is_stored = std::find(_symbols_stored.begin(), _symbols_stored.end(), symbol);
+    if(is_stored != _symbols_stored.end())
+        return false;
+    else if(symbols.empty() or is_stored == _symbols_stored.end()){
+        _symbols_stored.push_back(symbol);
+        symbols.push_back(index);
+        _symbols_classificationp.first = symbol; //Symbol
+        _symbols_classificationp.second = symbols; //Symbols indices
+        _symbols_classificationm.insert(_symbols_classificationp);
+        return true;
+    }
+    return false;
+}
+
+void expression::set_index_to_symbols(char &symbol, int &index){
+    _index_to_symbolsp.first = index;
+    _index_to_symbolsp.second = symbol;
+    _index_to_symbolsm.insert(_index_to_symbolsp);
+}
+
+void expression::insert_index_to_symbols() {
+    for(int i = 0; i < _expressionarr.size(); i++){
+        auto issymbol = std::find(_symbols.begin(), _symbols.end(), _expressionarr[i][0]);
+        if(issymbol != _symbols.end()){
+            insert_symbol(_expressionarr[i][0], i); //We index the string so as tu turn it into a character
+        }
+    }
+}
+
+void expression::insert_symbol(char &symbol, int &index) {
+    set_index_to_symbols(symbol, index);
+    switch(symbol){
+            
+        case '+' : if(initialise_classification('+', index)); else _symbols_classificationm['+'].push_back(index); break;
+            
+        case '-' : if(initialise_classification('-', index)); else _symbols_classificationm['-'].push_back(index); break;
+            
+        case '*' : if(initialise_classification('*', index)); else _symbols_classificationm['*'].push_back(index); break;
+            
+        case '/' : if(initialise_classification('/', index)); else _symbols_classificationm['/'].push_back(index); break;
+            
+        default : ;
+            
+    }
+}
+
+
+std::string expression::give_function(int &index){
+    //It will return a function given the index of its starting brackets
+    //It is given by calculating the distances between the brackets and all other functions lying behind them.
+    //The minimum distance is used to find the index to the function that matches the brackets
+    std::vector<int> distances;
+    int distance;
+    std::size_t at;
+    if(!_repeated_values){ //If there are no repeated values we iterate through a map
+        typedef  std::map<int, std::string>::const_iterator indices; //It extracts the indices to a function from the _index_to_function map (see above)
+        for( indices iter = _index_to_functionm.begin(); iter != _index_to_functionm.end(); iter++){
+            distance = index - iter->first;
+            if(distance > 0)
+                distances.push_back(distance);
+            else
+                continue;
+        }
+    }
+    else{ //Else we iterate through a multimap
+        typedef std::multimap<int, std::string>::const_iterator indicesr;
+        for(indicesr iter = _index_to_functionmr.begin(); iter != _index_to_functionmr.end(); iter++){
+            distance = index - iter->first; //We calculate distance
+            if(distance > 0) //Filter out negative values
+                distances.push_back(distance); //and store the results in a vector
+            else
+                continue;
+        }
+    }
+    auto min = std::min_element(std::begin(distances), std::end(distances));
+    at = std::distance(distances.begin(), min);
+    return _index_to_functionm[index - distances[static_cast<int>(at)]]; //Function is returned from a hash table
+}
+
+
+std::vector<int> expression::brackets_bag(){
+    //It collects the positions of starting brackets in order of appereance
+    std::vector<int> brackets_positions;
+    std::vector<std::vector<std::size_t>> positions;
+    boost::iterator_range<std::string::iterator> pos;
+    std::size_t bracket_index;
+    for(int i = 0; i < _expressionarr.size(); i++){
+        if(_expressionarr[i] == "(") {
+            brackets_positions.push_back(i); //We need to cast a size_t value to int
+            _index_to_bracketsp.first = i;
+            _index_to_bracketsp.second = true; //true stands for '('
+            _index_to_bracketsm.insert(_index_to_bracketsp);
+        }
+        else if(_expressionarr[i] == ")")  {
+            brackets_positions.push_back(i);
+            _index_to_bracketsp.first = i;
+            _index_to_bracketsp.second = false; //false stands for ')'
+            _index_to_bracketsm.insert(_index_to_bracketsp);
+        }
+    }
+    return brackets_positions;
+}
+
+void expression::test3(){
+    typedef std::multimap<std::string, std::vector<int>>::const_iterator MapIterator;
+    for(MapIterator iter = _function_to_rangemr.begin(); iter != _function_to_rangemr.end(); iter++){
+        std::cout << "Function: " << iter->first << "\nArguments:" << std::endl;
+        typedef std::vector<int>::const_iterator VectorIterator;
+        for(VectorIterator vect_iter = iter ->second.begin(); vect_iter != iter -> second.end(); vect_iter++){
+            std::cout << " " << *vect_iter << std::endl;
+        }
+    }
+}
+
+
+void expression::test2(){
+    typedef std::multimap<std::tuple<int, int>, std::tuple<int, int>>::const_iterator Iterator;
+    for(Iterator iter = _SE_to_OD.begin(); iter != _SE_to_OD.end(); iter++){
+        std::cout<<"SE: "<< std::get<0>(iter->first) << "\t" << std::get<1>(iter->first) << "\nOD: " << std::get<0>(iter->second) << "\t" << std::get<1>(iter->second) << std::endl;
+    }
+}
+
+void expression::test1(){
+    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
+    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+        std::cout<<std::get<0>(iter->first) << "\t" << std::get<1>(iter->first)<<"\n" << "Inside: ";
+        for(const auto &i : iter->second){
+            std::cout<<std::get<0>(i) << "\t" << std::get<1>(i) << "\n" << std::endl;
+        }
+    }
+}
+
+
+void expression::find_scopes(){
+    //It stores each function along with its argument range, defined by the brackets position in a map
+    Parser parse = Parser(_expression);
+    _expressionarr = parse.detect_functions();
+    _repeated_values = true;
+    _use_multimap = true;
+    insert_index_to_function();
+    insert_index_to_symbols();
+    std::vector<int> brackets_positions = brackets_bag();
+    std::stack<int> pending_brackets; //Brackets whose potential partners were already taken:(
+    int single_bracket; //A bracket looking for a partner
+    std::vector<int> arguments_range; //It will serve as a temporary container to store values in a hash table
+    for( unsigned i = (int) brackets_positions.size(); i-- > 0;){
+        if(!_index_to_bracketsm[brackets_positions[i]]){ //If brackets are ending brackets ')'
+            if(!_index_to_bracketsm[brackets_positions[i - 1]]){ //If its previous brackets are also ending brackets
+                pending_brackets.push(brackets_positions[i]); //We push it into a stack
+            } //The logic might seem counter-intuitive at first glance, keep in mind we are iterating backwards
+            else{
+                arguments_range.push_back(brackets_positions[i]); //We push the position for ending brackets
+                arguments_range.push_back(brackets_positions[i - 1]); //We push the position for starting brackets
+                _function_to_rangep.first = give_function(brackets_positions[i]); //Values for ending and starting brackets are swapped when being stored
+                _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
+                if(!_repeated_values) //We store in a map
+                    _function_to_rangem.insert(_function_to_rangep);
+                else //We store in a multimap
+                    _function_to_rangemr.insert(_function_to_rangep);
+                arguments_range.clear(); //We clear for the next value to be stored
+            }
+        }
+        else if(!_index_to_bracketsm[brackets_positions[i + 1]]){ //If the previous bracket to our current bracket is an ending bracket ')' i.e if ')))...)'
+            ; //We ignore it, this way we make sure that when the next condition is met there will be a '(' to ')' relationship
+        }
+        else { //If our current bracket is a starting bracket '(' i.e if we have '()'
+            single_bracket = pending_brackets.top(); //We get our previously stored value from the stack
+            arguments_range.push_back(single_bracket); //We push the position for ending brackets
+            arguments_range.push_back(brackets_positions[i]); //We push the position for starting brackets
+            pending_brackets.pop(); //And free our friend from the stack
+            _function_to_rangep.first = give_function(single_bracket); //Values for ending and starting brackets are swapped when being stored
+            _function_to_rangep.second = arguments_range; //That way the computer stores them in a start-to-end order
+            if (!_repeated_values) //We store in a map
+                _function_to_rangem.insert(_function_to_rangep);
+            else //We store in a multimap
+                _function_to_rangemr.insert(_function_to_rangep);
+            arguments_range.clear();
+        }
+    }
+}
+
+void expression::insert_SE_OD(std::tuple<int, int> &SE, std::tuple<int, int> OD){
+    _SE_to_ODp.first = SE;
+    _SE_to_ODp.second = OD;
+    _SE_to_OD.insert(_SE_to_ODp);
+}
+
+void expression::fill_function_to_inside(std::tuple<int, int> &pivot){
+    int S1 = std::get<0>(pivot);
+    int E1 = std::get<1>(pivot);
+    int S2;
+    int E2;
+    std::vector<std::tuple<int, int>> functions_inside;
+    bool inside = false;
+    _function_to_inside_functionp.first = pivot;
+    for (auto &i : _function_ranges){
+        S2 = std::get<0>(i);
+        E2 = std::get<1>(i);
+        if(S1 < S2 and E1 > E2){
+            inside = true;
+            functions_inside.push_back(std::make_tuple(S2, E2));
+        }
+        else
+            continue;
+    }
+    if(!inside)
+        functions_inside.push_back(pivot);
+    else
+        ;
+    _function_to_inside_functionp.second = functions_inside;
+    _function_to_inside_functionm.insert(_function_to_inside_functionp);
+}
+
+void expression::find_functions_inside() { //Refactoring needed
+    bool inside;
+    int depth;
+    int order;
+    std::vector<std::tuple<int, int>> order_depth;
+    std::tuple<int, int> pivot;
+    while(!_function_ranges.empty()){
+        depth = 0;
+        order = 0;
+        pivot = _function_ranges.front();
+        _sorted_SB_EB.push_back(pivot);
+        _function_ranges.pop_front();
+        if(!_function_to_inside_functionm.empty()){
+            typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator MapIterator; //We calculate the depth by checking if the function exists in other functions
+            for(MapIterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+                auto found = std::find(iter->second.begin(), iter->second.end(), pivot);
+                if(found != iter->second.end()){
+                    inside = true;
+                    depth += 1;
+                }
+                else
+                    continue;
+            }
+            if(!inside){ //If function is not inside any function we have depth 0
+                //If it is level 0 we can check its order without caring about other functions being stored previously
+                for(int i = 0; i < order_depth.size(); i++){
+                    if(std::get<0>(order_depth[i]) == 0)
+                        order = std::get<1>(order_depth[i]) + 1;
+                    else
+                        continue;
+                }
+                order_depth.push_back(std::make_tuple(depth, order));
+                insert_SE_OD(pivot, std::make_tuple(depth, order));
+            }
+            else { //If it is not inside, the order_depth vector has already been filled
+                for (unsigned i = (int) order_depth.size(); i-- > 0;) { //We make sure that the new tuple is stored with the right order value, comparing with previously stored tuples
+                    if(std::get<0>(order_depth[i]) > depth){
+                        continue;
+                    }
+                    else if(std::get<0>(order_depth[i]) < depth){ //If previous value has lower depth, our new order value will always be 1
+                        order = 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        insert_SE_OD(pivot, std::make_tuple(depth, order));
+                        break;
+                    }
+                    else{
+                        order = std::get<1>(order_depth[i]) + 1;
+                        order_depth.push_back(std::make_tuple(depth, order));
+                        insert_SE_OD(pivot, std::make_tuple(depth, order));
+                        break;
+                    }
+                }
+            }
+        }else{
+            order = 1;
+            order_depth.push_back(std::make_tuple(depth, order));
+            insert_SE_OD(pivot, std::make_tuple(depth, order));
+        }
+        fill_function_to_inside(pivot);
+    }
+}
+
+void expression::fill_function_ranges() {
+    std::vector<int> indices_buffer;
+    if(!_repeated_values){
+        typedef std::map<std::string, std::vector<int>>::const_iterator iterator;
+        for(iterator it = _function_to_rangem.begin(); it != _function_to_rangem.end(); it++){
+            indices_buffer.push_back(it->second[1]);
+        }
+        std::sort(indices_buffer.begin(), indices_buffer.end());
+        for(int sindex : indices_buffer){
+            for(iterator it = _function_to_rangem.begin(); it != _function_to_rangem.end(); it++){
+                if (it->second[1] == sindex){
+                    _function_ranges.push_back(std::make_tuple(it->second[1], it->second[0]));
+                    break;
+                } else
+                    continue;
+            }
+        }
+    }
+    else {
+        typedef std::multimap<std::string, std::vector<int>>::const_iterator iteratorr; //refer to https://stackoverflow.com/questions/29535125/access-key-from-values-and-value-from-key
+        for (iteratorr it = _function_to_rangemr.begin(); it != _function_to_rangemr.end(); it++) {
+            indices_buffer.push_back(it->second[1]);
+        }
+        std::sort(indices_buffer.begin(), indices_buffer.end());
+        for(int sindex : indices_buffer) {
+            for (iteratorr it = _function_to_rangemr.begin(); it != _function_to_rangemr.end(); it++) {
+                if (it->second[1] == sindex) {
+                    _function_ranges.push_back(std::make_tuple(it->second[1], it->second[0]));
+                    break;
+                } else
+                    continue;
+            }
+        }
+    }
+}
+
+void expression::function_parser(){
+    std::vector<std::tuple<int, int>> order_depth;
+    std::tuple<int, int> pivot;
+    fill_function_ranges();
+    find_functions_inside();
+    test1();
+    test2();
+    test3();
+}
+
+std::string expression::differentiate_argument(int &SB, int &EB, bool is_Polynomial){
+    std::string argument;
+    std::string derivative;
+    for(int i = SB; i < EB; i++){
+        argument += _expressionarr[i];
+    }
+    return argument;
+    //We create the argument object here,
+    //argument argument = argument(argument, is_Polynomial);
+    //derivative = argument.differentiate();
+    //return derivative;
+}
+
+void expression::sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector){
+    std::sort(std::begin(tuples_vector), std::end(tuples_vector), [](std::tuple<int, int> const &t1, std::tuple<int, int> const &t2) {
+        return std::get<0>(t1) < std::get<0>(t2);
+    });
+}
+
+void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue){
+    std::sort(std::begin(tuples_queue), std::end(tuples_queue), [](std::tuple<std::tuple<int, int>, std::tuple<int, int>> const &t1) {
+        return std::get<1>(std::get<0>(t1)) < std::get<1>(std::get<1>(t1));
+    });
+}
+
+void expression::differentiate_at_same_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative){
+    /* As if we were peeling an onion from the inside, that's how this function is processing each function argument, from the deepest (which always contains a polynomial) to the outer-most levels of depth*/
+    typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> OD_SE; //Starting and ending brackets' indices
+    std::deque<OD_SE> orders_of_depth; //How deep the functions are
+    std::deque<OD_SE> current_level; //Functions which are currently to be processed
+    OD_SE cur;
+    std::tuple<int, int> to_be_deleted; //This container will store
+    int deepest_level;
+    while(!_sorted_SB_EB.empty()){
+        for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed level
+            if(differentiated_functions[SB_EB]){ //If function has already been differentiated
+                orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB]));
+                sort_tuples_queue(orders_of_depth);
+                deepest_level = std::get<1>(std::get<0>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
+                while(std::get<1>(std::get<0>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are
+                    cur = orders_of_depth.front();
+                    current_level.push_back(cur);
+                    orders_of_depth.pop_front();
+                    to_be_deleted = std::get<0>(cur);
+                    _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
+                }
+                std::reverse(current_level.begin(), current_level.end()); //Now we have all functions lying at the same level, we need an algorithm that picks up all functions which are in the same argument
+                //Once we have it, we pick up that specific
+            }
+        }
+        
+        //Next the arguments are differentiated
+    }
+}
+
+//Welcome to hell...
+std::string expression::differentiate() {
+    typedef std::map<std::tuple<int, int>, std::tuple<std::string, std::string>>::const_iterator iter;
+    typedef std::tuple<int, int> SB_EB;
+    typedef std::tuple<std::string, std::string> expression_to_derivative;
+    typedef bool derivative_found;
+    std::vector<std::tuple<int, int>> derivatives_buffer;
+    std::deque<std::string> polynomial_derivatives;
+    std::map<SB_EB, expression_to_derivative> scope_to_expression_to_derivative;
+    std::pair<SB_EB, derivative_found> differentiated_functionsp;
+    std::map<SB_EB, derivative_found> differentiated_functions;
+    std::string derivative;
+    if(!_function_to_inside_functionm.empty()) {
+        scope_to_expression_to_derivative = differentiate_polynomials_inside(derivatives_buffer); //We start by simply differentiating the polynomials contained at the lowest degrees of depth
+        sort_tuples_vector(_sorted_SB_EB);
+        for(iter it = scope_to_expression_to_derivative.begin(); it != scope_to_expression_to_derivative.end(); it++){
+            differentiated_functionsp.first = it->first;
+            differentiated_functionsp.second = true;
+            differentiated_functions.insert(differentiated_functionsp);
+        }
+    } else { //We just differentiate a polynomial
+        ;
+    }
+    return derivative;
+}
+
+void expression::subvector_to_string(std::tuple<int, int> &indices, std::string &expression){
+    //Assigns string elements from a vector in a given indices range to a string variable
+    for(int i = std::get<0>(indices); i <= std::get<1>(indices); i++){
+        expression += _expressionarr[i];
+    }
+}
+
+std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> expression::differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer){
+    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
+    std::pair<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivativep;
+    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivative;
+    std::deque<std::string> polynomial_derivatives;
+    std::string expression;
+    std::string derivative;
+    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+        if(iter->first == iter->second.back()){ //If the function only has polynomials inside
+            derivatives_buffer.push_back(iter->first);
+        }
+        else
+            continue;
+    }
+    sort_tuples_vector(derivatives_buffer); //We sort it so they will processed sequentially
+    for(std::tuple<int, int> SB_EB : derivatives_buffer){ //We iterate through the starting and ending brackets of every function containing polynoials
+        subvector_to_string(SB_EB, expression); //We extract the arguments from the expression array, given our indices
+        Argument argument = Argument(expression, polynomial_derivatives); //
+        derivative = argument.differentiate();
+        polynomial_derivatives.push_back(derivative);
+        scope_to_polynomial_to_derivativep.first = SB_EB;
+        scope_to_polynomial_to_derivativep.second = std::make_tuple(expression, derivative);
+        scope_to_polynomial_to_derivative.insert(scope_to_polynomial_to_derivativep);
+        expression.clear();
+    }
+    return scope_to_polynomial_to_derivative;
+}
+
+expression::expression(std::string expression){
+    _expression = expression;
+}
+
+expression::~expression(){
+    
+}
+
+std::string expression::differentiate_function(std::string function) {
+    return std::string();
 }
 
 void test_argument(){
     std::string expression = "3x + 5x^53 - 3x - 5x^53";
-    Argument argument = Argument(expression);
-    std::cout<<argument.differentiate()<<std::endl;
+    //Argument argument = Argument(expression);
+    //std::cout<<argument.differentiate()<<std::endl;
+}
+
+void test_simplification(){
+    std::string expression = "3x + 5x^53 - 3x - 5x^53";
+    simplifier simplifier = simplifier(expression);
+    simplifier.simplify_expression();
 }
 
 void autocalculus(){
@@ -1533,7 +1937,7 @@ void autocalculus(){
         std::cout <<"                                               <---Auto Calculus--->\n\n\n";
         std::cout <<"                                         Enter function to be differentiated\n                                 " << std::endl;
         std::cin.getline(input, sizeof(input));
-        derivative function = derivative(input);
+        expression function = expression(input);
         function.find_scopes();
         function.function_parser();
         function.differentiate();
@@ -1542,8 +1946,7 @@ void autocalculus(){
 }
 
 int main(){
-    
-    test_argument();
+    test_simplification();
     getchar();
     return 0;
 }
