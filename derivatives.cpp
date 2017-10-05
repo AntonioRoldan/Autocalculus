@@ -1817,28 +1817,29 @@ void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, s
 }
 
 void expression::differentiate_at_same_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative){
-    /* As if we were peeling an onion from the inside, that's how this function is processing each function argument, from the deepest (which always contains a polynomial) to the outer-most levels of depth*/
+    /* As if we were peeling an onion from the inside, that's how this function is processing each function argument, from the inner (which always contains a polynomial) to the outer-most levels of depth*/
     typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> OD_SE; //Starting and ending brackets' indices
     std::deque<OD_SE> orders_of_depth; //How deep the functions are
     std::deque<OD_SE> current_level; //Functions which are currently to be processed
     OD_SE cur;
     std::tuple<int, int> to_be_deleted; //This container will store
     int deepest_level;
-    while(!_sorted_SB_EB.empty()){
+    while(!_sorted_SB_EB.empty()){ //While there is some function we haven't processed yet
         for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed level
             if(differentiated_functions[SB_EB]){ //If function has already been differentiated
-                orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB]));
+                orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB])); //They are always being stored in a left to right order
                 sort_tuples_queue(orders_of_depth);
                 deepest_level = std::get<1>(std::get<0>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
-                while(std::get<1>(std::get<0>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are
+                while(std::get<1>(std::get<0>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth
                     cur = orders_of_depth.front();
-                    current_level.push_back(cur);
+                    current_level.push_back(cur); //We push them into the queue containing all functions found at the same level of depth
                     orders_of_depth.pop_front();
-                    to_be_deleted = std::get<0>(cur);
+                    to_be_deleted = std::get<0>(cur); //Since we are going to process this function already before the loop reaches it, we can delete it
                     _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
                 }
                 std::reverse(current_level.begin(), current_level.end()); //Now we have all functions lying at the same level, we need an algorithm that picks up all functions which are in the same argument
-                //Once we have it, we pick up that specific
+                
+                //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
             }
         }
         
