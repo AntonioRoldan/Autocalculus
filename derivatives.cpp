@@ -1428,7 +1428,7 @@ public:
     std::string differentiate();
     std::string differentiate_function(std::string function);
     void sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector);
-    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> differentiate_polynomials_inside(bool &single_polynomial_inside, std::vector<std::tuple<int, int>> &derivatives_buffer);
+    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer);
     void function_parser();
     void test1();
     void test2();
@@ -1859,22 +1859,13 @@ std::string expression::differentiate() {
     std::pair<SB_EB, derivative_found> differentiated_functionsp;
     std::map<SB_EB, derivative_found> differentiated_functions;
     std::string derivative;
-    bool single_polynomial_inside = false;
-    if(!_function_to_inside_functionm.empty()) {//If we have any functions
-        if(_function_to_inside_functionm.size() == 1){ //We may have the case where there is a function containing a single polynomial
-            single_polynomial_inside = true;
-            derivative = differentiate_polynomials_inside(single_polynomial_inside, derivatives_buffer); //We get the derivative to the polynomial 
-            //TODO:Now we process the single function and get the derivative, we will need another method for that 
-        }
-        else{
-            scope_to_expression_to_derivative = differentiate_polynomials_inside(single_polynomial_inside, derivatives_buffer); //We start by simply differentiating the polynomials contained at the lowest degrees of depth
-            sort_tuples_vector(_sorted_SB_EB);
-            for(iter it = scope_to_expression_to_derivative.begin(); it != scope_to_expression_to_derivative.end(); it++){
-                differentiated_functionsp.first = it->first;
-                differentiated_functionsp.second = true;
-                differentiated_functions.insert(differentiated_functionsp);
-            }
-            //Here we should add the differentiate at same level function 
+    if(!_function_to_inside_functionm.empty()) {
+        scope_to_expression_to_derivative = differentiate_polynomials_inside(derivatives_buffer); //We start by simply differentiating the polynomials contained at the lowest degrees of depth
+        sort_tuples_vector(_sorted_SB_EB);
+        for(iter it = scope_to_expression_to_derivative.begin(); it != scope_to_expression_to_derivative.end(); it++){
+            differentiated_functionsp.first = it->first;
+            differentiated_functionsp.second = true;
+            differentiated_functions.insert(differentiated_functionsp);
         }
     } else { //We just differentiate a polynomial
         ;
@@ -1889,46 +1880,32 @@ void expression::subvector_to_string(std::tuple<int, int> &indices, std::string 
     }
 }
 
-std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> expression::differentiate_polynomials_inside(bool &single_polynomial, std::vector<std::tuple<int, int>> &derivatives_buffer){
+std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> expression::differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer){
     typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
     std::pair<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivativep;
     std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivative;
     std::deque<std::string> polynomial_derivatives;
     std::string expression;
     std::string derivative;
-    if(single_polynomial){ //If we have a function with a single polynomial i.e sin(x) 
-        for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){ //TODO: Turn me into a function
-            if(iter->first == iter->second.back()):
-                derivatives_buffer.push_back(iter->first);
-            else:
-                continue;
+    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
+        if(iter->first == iter->second.back()){ //If the function only has polynomials inside
+            derivatives_buffer.push_back(iter->first);
         }
-        subvector_to_string(derivatives_buffer.pop(), expression); 
-        Argument argument = Argument(expression, polynomial_derivatives);
+        else
+            continue;
+    }
+    sort_tuples_vector(derivatives_buffer); //We sort it so they will processed sequentially
+    for(std::tuple<int, int> SB_EB : derivatives_buffer){ //We iterate through the starting and ending brackets of every function containing polynoials
+        subvector_to_string(SB_EB, expression); //We extract the arguments from the expression array, given our indices
+        Argument argument = Argument(expression, polynomial_derivatives); //
         derivative = argument.differentiate();
-        return derivative;
+        polynomial_derivatives.push_back(derivative);
+        scope_to_polynomial_to_derivativep.first = SB_EB;
+        scope_to_polynomial_to_derivativep.second = std::make_tuple(expression, derivative);
+        scope_to_polynomial_to_derivative.insert(scope_to_polynomial_to_derivativep);
+        expression.clear();
     }
-    else{ //If we have functions inside functions which in turn will inevitably have polynomials inside we differentiate them all 
-        for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-            if(iter->first == iter->second.back()){ //If the function only has polynomials inside
-                derivatives_buffer.push_back(iter->first);
-            }
-            else
-                continue;
-        }
-        sort_tuples_vector(derivatives_buffer); //We sort it so they will processed sequentially
-        for(std::tuple<int, int> SB_EB : derivatives_buffer){ //We iterate through the starting and ending brackets of every function containing polynoials
-            subvector_to_string(SB_EB, expression); //We extract the arguments from the expression array, given our indices
-            Argument argument = Argument(expression, polynomial_derivatives); //
-            derivative = argument.differentiate();
-            polynomial_derivatives.push_back(derivative);
-            scope_to_polynomial_to_derivativep.first = SB_EB;
-            scope_to_polynomial_to_derivativep.second = std::make_tuple(expression, derivative);
-            scope_to_polynomial_to_derivative.insert(scope_to_polynomial_to_derivativep);
-            expression.clear();
-        }
-        return scope_to_polynomial_to_derivative;
-    }
+    return scope_to_polynomial_to_derivative;
 }
 
 expression::expression(std::string expression){
