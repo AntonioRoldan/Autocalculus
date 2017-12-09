@@ -3,7 +3,6 @@
 #include <array>
 #include <vector>
 #include <set>
-#include <boost/algorithm/string/find.hpp>
 #include<cmath>
 #include <numeric>
 #include<deque>
@@ -11,9 +10,9 @@
 #include <sstream>
 
 class Parser{
-    
+
 private:
-    
+
     std::string _expression;
     std::vector<std::string>_expressionarr;
     bool _use_multimap;
@@ -28,9 +27,9 @@ private:
     std::multimap<int, std::string> _index_to_functionmr;
     std::vector<int> parsed_argument;
     std::vector<std::string> poly;
-    
+
 public:
-    
+
     std::vector<std::string> detect_functions();
     bool isNumber(char &number);
     bool isSymbol(char &symbol);
@@ -39,7 +38,7 @@ public:
     void insert_index_to_expression(int &index, std::string &expression);
     std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> parse();
     Parser(std::string &expression);
-    
+
 };
 
 Parser::Parser(std::string &expression) {
@@ -146,9 +145,9 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
     std::string function;
     while (!done) {
         for (int i = 0; i <= _expression.size(); i++) {
-            
+
             switch (_expression[i]) {
-                    
+
                 case 'l' :
                     if (_expression[i + 1] == 'n') {
                         function = "ln";
@@ -160,7 +159,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                         log++;
                     }
                     break;
-                    
+
                 case 's' :
                     if (_expression[i + 1] == 'i') {
                         if (_expression[i - 3] == 'a');
@@ -186,7 +185,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                         sec++;
                     }
                     break;
-                    
+
                 case 'c' :
                     if (_expression[i + 1] == 'o') {
                         if (_expression[i - 2] == 'a');
@@ -204,23 +203,23 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                     else if (_expression[i - 1] == 'e');
                     else;
                     break;
-                    
+
                 case 'a':
                     switch (_expression[i + 3]) {
-                            
+
                         case 'o':
                             function = "arcos";
                             _expressionarr.push_back(function);
                             arcos++;
                             break;
-                            
+
                         case 's':
                             function = "arcsin";
                             _expressionarr.push_back(function);
                             arcsin++;
                             break;
-                            
-                            
+
+
                         case 't':
                             function = "arctan";
                             _expressionarr.push_back(function);
@@ -228,7 +227,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                             break;
                     }
                     break;
-                    
+
                 case 't':
                     if (_expression[i - 3] == 'a');
                     else if (_expression[i - 2] == 'c') {
@@ -243,7 +242,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                         break;
                     }
                     break;
-                    
+
                 case 'e':
                     if (_expression[i - 1] == 's');
                     else if (_expression[i - 3] == 'c');
@@ -296,8 +295,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
                         }
                     }
                     if (isSymbol(_expression[i])) { //TODO Get the program to process exponents to expressions between brackets as functions
-                        if (_expression[i] == '^' and _expression[i - 1] ==
-                            ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
+                        if (_expression[i] == '^' and _expression[i - 1] == ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
                             ; //with its respective derivative
                         else
                             _expressionarr.push_back(std::string(1, _expression[i])); //We convert char into a string of length one
@@ -319,9 +317,9 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 }
 
 class algebraic_manipulation {
-    
+
 private:
-    
+
     std::vector<char> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
     struct Binomial{
         bool double_subtraction;
@@ -333,9 +331,9 @@ private:
         std::string expression_b;
     };
     Binomial binomial;
-    
+
 public:
-    
+
     std::string addMonomials(std::string &a, std::string &b);
     int perform_arithmetic(int a_integer, int b_integer);
     void check_arithmetic_equivalency(std::string &a, std::string &b);
@@ -543,10 +541,10 @@ algebraic_manipulation::algebraic_manipulation(bool &double_subtraction) {
 
 
 class simplifier{
-    
-    
+
+
 private:
-    
+
     std::string expression;
     std::vector<std::string> _expressionarr;
     std::string _expression;
@@ -589,9 +587,9 @@ private:
         std::vector<std::tuple<int, int>> integers;
     };
     Polynomial polynomial;
-    
+
 public:
-    
+
     std::string simplify_expression();
     void set_operation(bool add_or_sub, std::string a_sign, std::string b_sign);
     void insert_index_to_expression(int &index, std::string &expression);
@@ -943,10 +941,10 @@ std::string simplifier::simplify_expression(){
 }
 
 class Argument { //parse_argument has to parse the simplification of the expression, before proceeding to perform the derivatives
-    
-    
+
+
 private:
-    
+
     bool _repeated_values;
     bool _use_multimap;
     bool isPolynomial;
@@ -983,9 +981,9 @@ private:
         std::vector<int> parsed_argument;
     };
     argument argument;
-    
+
 public:
-    
+
     bool isNumber(char &number);
     bool isSymbol(std::string symbol);
     std::string differentiate();
@@ -1010,7 +1008,7 @@ public:
     std::string set_subtractions_additions(std::vector<std::tuple<int, int>> &common_exponents);
     std::string operate_integers();
     Argument(std::string &argument, std::deque<std::string> &derivatives_inside);
-    
+
 };
 
 bool Argument::isNumber(char &number) {
@@ -1331,7 +1329,7 @@ std::string Argument::differentiate_monomial(std::string &monomial) {
         if(monomial != "x"){
             if(exponent.front() == '2' and exponent.size() == 2) { //Nx^2
                 derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(
-                                                                                                       monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
+                        monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
                 derivative += 'x';
             }
             else{ //Nx^N
@@ -1350,9 +1348,9 @@ std::string Argument::differentiate_monomial(std::string &monomial) {
                 derivative = derivative + '^' + exponent;
             }
         }
-        else{ //We just have a coefficient N
-            derivative = "0";
-        }
+    else{ //We just have a coefficient N
+        derivative = "0";
+    }
     return derivative;
 }
 
@@ -1376,10 +1374,10 @@ Argument::Argument(std::string &argument, std::deque<std::string> &derivatives_i
 
 
 class expression{
-    
-    
+
+
 private:
-    
+
     std::string _expression;
     std::deque<std::tuple<int, int>> _function_ranges;
     std::vector<std::string> _expressionarr;
@@ -1406,9 +1404,9 @@ private:
     std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
     std::vector<std::tuple<int, int>> _sorted_SB_EB;
     bool _repeated_values = false;
-    
+
 public:
-    
+
     bool isNumber(char &number);
     bool isSymbol(char &symbol);
     void subvector_to_string(std::tuple<int, int> &indices, std::string &expression); //TODO: Test this mess
@@ -1428,13 +1426,13 @@ public:
     std::string differentiate();
     std::string differentiate_function(std::string function);
     void sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector);
-    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer);
+    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer, std::deque<std::string> &previous_polynomials);
     void function_parser();
     void test1();
     void test2();
     void test3();
     void sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue);
-    void differentiate_at_same_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative);
+    void differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative);
     expression(std::string expression); //Copy constructor
     expression(expression&&) = default; //Move constructor
     expression& operator = (const expression&) & = default; //Move constructor
@@ -1502,17 +1500,17 @@ void expression::insert_index_to_symbols() {
 void expression::insert_symbol(char &symbol, int &index) {
     set_index_to_symbols(symbol, index);
     switch(symbol){
-            
+
         case '+' : if(initialise_classification('+', index)); else _symbols_classificationm['+'].push_back(index); break;
-            
+
         case '-' : if(initialise_classification('-', index)); else _symbols_classificationm['-'].push_back(index); break;
-            
+
         case '*' : if(initialise_classification('*', index)); else _symbols_classificationm['*'].push_back(index); break;
-            
+
         case '/' : if(initialise_classification('/', index)); else _symbols_classificationm['/'].push_back(index); break;
-            
+
         default : ;
-            
+
     }
 }
 
@@ -1554,7 +1552,6 @@ std::vector<int> expression::brackets_bag(){
     //It collects the positions of starting brackets in order of appereance
     std::vector<int> brackets_positions;
     std::vector<std::vector<std::size_t>> positions;
-    boost::iterator_range<std::string::iterator> pos;
     std::size_t bracket_index;
     for(int i = 0; i < _expressionarr.size(); i++){
         if(_expressionarr[i] == "(") {
@@ -1816,36 +1813,52 @@ void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, s
     });
 }
 
-void expression::differentiate_at_same_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative){
-    /* As if we were peeling an onion from the inside, that's how this function is processing each function argument, from the inner (which always contains a polynomial) to the outer-most levels of depth*/
-    typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> OD_SE; //Starting and ending brackets' indices
-    std::deque<OD_SE> orders_of_depth; //How deep the functions are
-    std::deque<OD_SE> current_level; //Functions which are currently to be processed
-    OD_SE cur;
+void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative, std::deque<std::string> &polynomial_derivatives){
+    /* As if we were opening a russian doll from the inside, that's how this function is processing each function argument, from the inner (which always contains a polynomial) to the outer-most degrees of depth*/
+    typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> SE_OD; //Starting and ending brackets' indices
+    std::deque<SE_OD> orders_of_depth; //How deep the functions are
+    std::deque<SE_OD> current_level; //Functions which are currently to be processed
+    std::deque<std::string> previous_derivatives;
+    std::string derivative_inside;
+    std::string derivative_outside;
+    std::string expression;
+    SE_OD cur;
     std::tuple<int, int> to_be_deleted; //This container will store
     int deepest_level;
     while(!_sorted_SB_EB.empty()){ //While there is some function we haven't processed yet
-        for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed level
-            if(differentiated_functions[SB_EB]){ //If function has already been differentiated
-                orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB])); //They are always being stored in a left to right order
-                sort_tuples_queue(orders_of_depth);
-                deepest_level = std::get<1>(std::get<0>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
-                while(std::get<1>(std::get<0>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth
-                    cur = orders_of_depth.front();
-                    current_level.push_back(cur); //We push them into the queue containing all functions found at the same level of depth
-                    orders_of_depth.pop_front();
-                    to_be_deleted = std::get<0>(cur); //Since we are going to process this function already before the loop reaches it, we can delete it
-                    _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
-                }
-                std::reverse(current_level.begin(), current_level.end()); //Now we have all functions lying at the same level, we need an algorithm that picks up all functions which are in the same argument
-                
-                //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
-            }
+        for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed layers
+                orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB]));
         }
-        
-        //Next the arguments are differentiated
+        sort_tuples_queue(orders_of_depth);  //They are always being stored in a left to right(increasing) order
+        deepest_level = std::get<0>(std::get<1>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
+        orders_of_depth.pop_front();
+        while(std::get<0>(std::get<1>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth
+            //We fill up current level, it will contain all functions that can be found at the same degree of depth
+            cur = orders_of_depth.front();
+            current_level.push_back(cur); //We push them into the queue containing all functions found at the same level of depth
+            orders_of_depth.pop_front();
+            to_be_deleted = std::get<0>(cur); //Since we are going to process this function already before the loop reaches it, we can delete it
+            _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
+        }
+        //We revert the current level
+        for(SE_OD function : current_level){ //We are going from right to left in order to pick up the previous polynomials as we go
+            subvector_to_string(std::get<0>(function), expression); //We set up the expression to be differentiated
+            Argument argument = Argument(expression, previous_derivatives); //TODO: As they are being processed a pop front operation should be performed over previous derivatives
+            //Previous derivatives must be tokenised so that the expressions can be parsed without taking the trigonometric functions' arguments into account
+            //They'll be parsed in order by the # standard (i.e #1, #2, #3) they will be extracted from a map when needed
+            //The previous derivatives are going to replace our current functions, after the expression has been simplified
+            derivative_inside = argument.differentiate(); //The derivative inside is always definitive
+            //derivative_outside = simple derivative function returns in this case 1 * -sin hint: use get_function
+            //Derivative outside is a potential derivative we can use unless there is a simplification that changes our original functions
+            previous_derivatives.push_back(derivative_outside);
+        }
+        //tan(3x+ sin(x + cos(x)*log(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact
+        //tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos
+        //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
     }
+    //Only at this point will the outside derivative variable be valid since there are no more derivatives to be processed
 }
+
 
 //Welcome to hell...
 std::string expression::differentiate() {
@@ -1859,14 +1872,8 @@ std::string expression::differentiate() {
     std::pair<SB_EB, derivative_found> differentiated_functionsp;
     std::map<SB_EB, derivative_found> differentiated_functions;
     std::string derivative;
-    if(!_function_to_inside_functionm.empty()) {
-        scope_to_expression_to_derivative = differentiate_polynomials_inside(derivatives_buffer); //We start by simply differentiating the polynomials contained at the lowest degrees of depth
-        sort_tuples_vector(_sorted_SB_EB);
-        for(iter it = scope_to_expression_to_derivative.begin(); it != scope_to_expression_to_derivative.end(); it++){
-            differentiated_functionsp.first = it->first;
-            differentiated_functionsp.second = true;
-            differentiated_functions.insert(differentiated_functionsp);
-        }
+    if(!_function_to_inside_functionm.empty()){ //If there are any trigonometric function
+       differentiate_level_by_level(differentiated_functions, scope_to_expression_to_derivative);
     } else { //We just differentiate a polynomial
         ;
     }
@@ -1880,40 +1887,12 @@ void expression::subvector_to_string(std::tuple<int, int> &indices, std::string 
     }
 }
 
-std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> expression::differentiate_polynomials_inside(std::vector<std::tuple<int, int>> &derivatives_buffer){
-    typedef std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>>::const_iterator Iterator;
-    std::pair<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivativep;
-    std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> scope_to_polynomial_to_derivative;
-    std::deque<std::string> polynomial_derivatives;
-    std::string expression;
-    std::string derivative;
-    for(Iterator iter = _function_to_inside_functionm.begin(); iter != _function_to_inside_functionm.end(); iter++){
-        if(iter->first == iter->second.back()){ //If the function only has polynomials inside
-            derivatives_buffer.push_back(iter->first);
-        }
-        else
-            continue;
-    }
-    sort_tuples_vector(derivatives_buffer); //We sort it so they will processed sequentially
-    for(std::tuple<int, int> SB_EB : derivatives_buffer){ //We iterate through the starting and ending brackets of every function containing polynoials
-        subvector_to_string(SB_EB, expression); //We extract the arguments from the expression array, given our indices
-        Argument argument = Argument(expression, polynomial_derivatives); //
-        derivative = argument.differentiate();
-        polynomial_derivatives.push_back(derivative);
-        scope_to_polynomial_to_derivativep.first = SB_EB;
-        scope_to_polynomial_to_derivativep.second = std::make_tuple(expression, derivative);
-        scope_to_polynomial_to_derivative.insert(scope_to_polynomial_to_derivativep);
-        expression.clear();
-    }
-    return scope_to_polynomial_to_derivative;
-}
-
 expression::expression(std::string expression){
     _expression = expression;
 }
 
 expression::~expression(){
-    
+
 }
 
 std::string expression::differentiate_function(std::string function) {
@@ -1928,8 +1907,8 @@ void test_argument(){
 
 void test_simplification(){
     std::string expression = "3x + 5x^53 - 3x - 5x^53";
-    simplifier simplifier = simplifier(expression);
-    simplifier.simplify_expression();
+    simplifier simplified = simplifier(expression);
+    simplified.simplify_expression();
 }
 
 void autocalculus(){
