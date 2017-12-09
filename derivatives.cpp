@@ -1849,11 +1849,16 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
             //The previous derivatives are going to replace our current functions, after the expression has been simplified
             derivative_inside = argument.differentiate(); //The derivative inside is always definitive
             //derivative_outside = simple derivative function returns in this case 1 * -sin hint: use get_function
+            //We would always have to get rid of the one in cases like this
             //Derivative outside is a potential derivative we can use unless there is a simplification that changes our original functions
+            //That means original values won't be replaced unless there is a valid simplification
+            //In this example we would have a product rule which means that derivative outside would be used in the product rule formula
             previous_derivatives.push_back(derivative_outside);
         }
-        //tan(3x+ sin(x + cos(x)*log(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact
+        //TODO: Write a module that handles simple derivatives (i.e sin(#1) or ln(#1)
+        //tan(3x+ sin(x + cos(x)*log(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the chain rule
         //tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos
+        //The derivative to cos^2(x) would then be calculated
         //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
     }
     //Only at this point will the outside derivative variable be valid since there are no more derivatives to be processed
