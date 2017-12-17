@@ -488,7 +488,7 @@ void algebra::check_arithmetic_equivalency(std::string &a, std::string &b){
         binomial.equivalent_exponentiation = false;
     }
     else if(a.front() == 'x' and a.front() == b.front()){
-        binomial.non_exponentiated_monomials = true; //Non exponentiated but still with an x 
+        binomial.non_exponentiated_monomials = true; //Non exponentiated but still with an x
     }
     else if(a.front() != 'x' and b.front() != 'x'){
         binomial.both_integers = true;
@@ -527,7 +527,6 @@ std::string algebra::add_sub(std::string &a, std::string &b){
     }
     return result;
 }
-
 
 std::string algebra::arithmetic(std::string &a, std::string &b) {
     std::string result;
@@ -1393,8 +1392,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
 
         /////////////////////////////////1st example tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x))
-
-
+        
         //First iteration Note: the first iteration is always going to have a polynomial as argument, the next will always include a function
         //outside derivative = -sin(1#)
         //previous_derivatives.push_back(outside_derivative))
@@ -1402,11 +1400,13 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         //Second iteration
         //outside_derivative = 1/2#
         //previous_derivatives.push_back(outside_derivative)) Note: Since it is a queue, we know elements will always be processed in order in the next upper level
+
         //////////////UPPER LEVEL
-        //next we have as argument (x + cos(x)*ln(x)) and previous_derivatives(queue) = {1/2#, -sin(1#)} tokenised_arguments #1: x, #2: x
+        ///////////next we have as argument (x + cos(x)*ln(x)) and previous_derivatives(queue) = {1/2#, -sin(1#)} tokenised_arguments #1: x, #2: x
         //when the simplify function is called we know there is a product rule and so we leave it there before it has to be differentiated
 
         /////////////////////////////////2nd example tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x))
+        ///////////We will have the same here but the simplify function must handle the cos(x)*cos(x) case
     }
     //Only at this point will the outside derivative variable be valid since there are no more derivatives to be processed
 }
