@@ -316,6 +316,230 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
     return parsed_expression;
 }
 
+class algebra {
+
+private:
+
+    std::vector<char> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
+    struct Binomial{
+        bool double_subtraction;
+        bool equivalent_exponentiation;
+        bool non_exponentiated_monomials;
+        bool both_integers;
+        bool addition_or_subtraction;
+        std::string expression_a;
+        std::string expression_b;
+    };
+    Binomial binomial;
+
+public:
+
+    std::string addMonomials(std::string &a, std::string &b);
+    int perform_arithmetic(int a_integer, int b_integer);
+    void check_arithmetic_equivalency(std::string &a, std::string &b);
+    std::string add_sub(std::string &a, std::string &b);
+    std::string arithmetic(std::string &a, std::string &b);
+    std::string mulMonomials(std::string &a, std::string &b);
+    std::string subMonomials(std::string &a, std::string &b);
+    bool isNumber(char &number);
+    bool hasExponent(const std::string & str);
+    void reset_binomial();
+    algebra(bool &double_subtraction);
+};
+
+std::string algebra::subMonomials(std::string &a, std::string &b) {
+    std::string result;
+    binomial.addition_or_subtraction = false;
+    result = arithmetic(a, b);
+    if(std::stoi(result) < 0)
+        result = "-" + result;
+    else
+        result = "+" + result;
+    return result;
+}
+
+bool algebra::hasExponent(const std::string & str)
+{
+    const char c = '^';
+    return str.find(c) != std::string::npos;
+}
+
+//addition or subtraction,
+std::string algebra::mulMonomials(std::string &a, std::string &b) {
+    char exponent = '^';
+    int pos;
+    int posb; //Only used to store the position where character ^ is found in the b string in case both monomials are raised to some power
+    int a_integer;
+    int b_integer;
+    int a_exponentint;
+    int b_exponentint;
+    std::string a_exponent;
+    std::string b_exponent;
+    int result_exponent;
+    int result_integer;
+    std::string result;
+    if(a == "null" or b == "null")
+        return "null";
+    if(hasExponent(a) and hasExponent(b)){ //3x^2 * 4x^2 will be equal to 12x^4
+        pos = (int) a.find(exponent);
+        posb = (int) b.find(exponent);
+        a_integer = std::stoi(a.substr(0, (unsigned long) pos - 2));
+        b_integer = std::stoi(b.substr(0, (unsigned long) posb - 2));
+        a_exponentint = std::stoi(a.substr((unsigned long) (pos + 1), a.size()));
+        b_exponentint = std::stoi(b.substr((unsigned long) (posb + 1), b.size()));
+        result_exponent = a_exponentint + b_exponentint;
+        result_integer = a_integer * b_integer;
+        result = std::to_string(result_integer) + 'x' + '^' + std::to_string(result_exponent);
+    }
+    else if(hasExponent(a) and !hasExponent(b)) { //3x^2 and 4x or 4
+        pos = (int) a.find(exponent);
+        a_integer = std::stoi(a.substr(0, (unsigned long) pos - 2)); //We store 3 here
+        a_exponent.assign(a.begin() + pos - 1, a.begin() + pos); //pos - 1 to ensure we get the variable as well it will store x^ here
+        a_exponentint = std::stoi(a.substr(pos + 1, a.size())); //We store the 2 for the exponent here
+        if (isNumber(b.back())) { // 3x^2 * 4
+            b_integer = std::stoi(b);
+            result = std::to_string(a_integer * b_integer) + a_exponent + std::to_string(a_exponentint); //is 12x^2
+        } else { // 3x^2 * 4x
+            b_integer = std::stoi(b.substr(0, b.size() - 1));
+            a_exponentint += 1;
+            a_exponent += std::to_string(a_exponentint);
+            result = std::to_string(a_integer * b_integer) + a_exponent;
+        }
+    }
+    else if(!hasExponent(a) and hasExponent(b)){
+        pos = (int) b.find(exponent);
+        b_integer = std::stoi(b.substr(0, (unsigned long) pos - 1));
+        b_exponent.assign(b.begin() + pos - 1, b.begin() + pos);
+        b_exponentint = std::stoi(b.substr((unsigned long) (pos + 1), b.size()));
+        if(isNumber(a.back())){ //4 * 3x^2
+            a_integer = std::stoi(a);
+            result = std::to_string(a_integer * b_integer) + b_exponent + std::to_string(b_exponentint);
+        }
+        else{ //4x * 3x^2
+            a_integer = std::stoi(a.substr(0, a.size() - 1));
+            b_exponentint += 1;
+            a_exponent += std::to_string(b_exponentint);
+            result = std::to_string(a_integer * b_integer) + b_exponent;
+        }
+    }
+    else if(isNumber(a.back()) and b.back() == 'x') { //4 * 3x
+        a_integer = std::stoi(a);
+        b_integer = std::stoi(b.substr(0, b.size() - 1));
+        result = std::to_string(a_integer * b_integer) + b.back();
+    }
+    else if(a.back() == 'x' and b.back() == 'x'){ //3x * 4x
+        a_integer = std::stoi(a.substr(0, a.size() - 1));
+        b_integer = std::stoi(b.substr(0, b.size() - 1));
+        result = std::to_string(a_integer * b_integer) + a.back(); //a.front() is 'x'
+    }
+    else if(a.back() == 'x' and isNumber(b.back())){ //3x * 4
+        a_integer = std::stoi(a.substr(0, a.size() - 1));
+        b_integer = std::stoi(b);
+        result = std::to_string(a_integer * b_integer) + a.back();
+    }
+    else{
+        a_integer = std::stoi(a);
+        b_integer = std::stoi(b);
+        result = std::to_string(a_integer * b_integer);
+    }
+    return result;
+}
+
+bool algebra::isNumber(char &number) {
+    auto pos = std::find(_numbers.begin(), _numbers.end(), number);
+    return pos != _numbers.end();
+}
+
+std::string algebra::addMonomials(std::string &a, std::string &b){
+    std::string result;
+    binomial.addition_or_subtraction = true;
+    result = arithmetic(a, b);
+    if(binomial.double_subtraction)
+        result = "-" + result;
+    return result;
+}
+
+int algebra::perform_arithmetic(int a_integer, int b_integer){
+    int result_integer;
+    result_integer = binomial.addition_or_subtraction ? a_integer + b_integer : a_integer - b_integer;
+    return result_integer;
+}
+
+void algebra::reset_binomial(){
+    binomial.equivalent_exponentiation = false;
+    binomial.non_exponentiated_monomials = false;
+    binomial.both_integers = false;
+}
+
+void algebra::check_arithmetic_equivalency(std::string &a, std::string &b){
+    reset_binomial();
+    std::string a_exponent;
+    std::string b_exponent;
+    if(hasExponent(a) and hasExponent(b)) { //If they both have exponents
+        auto pos = a.find('^');
+        auto posb = b.find('^');
+        a_exponent.assign(a.begin() + pos + 1, a.begin() + a.size());
+        b_exponent.assign(b.begin() + posb + 1, b.begin() + b.size());
+        binomial.equivalent_exponentiation = a_exponent != b_exponent ? true : false;
+        return;
+    }
+        //if equivalent exponentiation is set to false the operation will stop
+    else if((hasExponent(a) and !hasExponent(b)) or (!hasExponent(a) and hasExponent(b))) {
+        binomial.equivalent_exponentiation = false;
+    }
+    else if(a.front() == 'x' and a.front() == b.front()){
+        binomial.non_exponentiated_monomials = true; //Non exponentiated but still with an x 
+    }
+    else if(a.front() != 'x' and b.front() != 'x'){
+        binomial.both_integers = true;
+    }
+}
+
+std::string algebra::add_sub(std::string &a, std::string &b){
+    std::string a_exponent;
+    std::string b_exponent;
+    int a_integer;
+    int b_integer;
+    int result_integer;
+    std::string result;
+    if(binomial.equivalent_exponentiation){ //3x^2 + 2x^2
+        auto pos = a.find('^');
+        auto posb = b.find('^');
+        a_exponent.assign(a.begin() + pos + 1, a.begin() + a.size());
+        b_exponent.assign(b.begin() + posb + 1, b.begin() + b.size());
+        a_integer = std::stoi(a.substr(0, pos - 2)); //-2 to make sure we get rid of the x
+        b_integer = std::stoi(b.substr(0, posb - 2));
+        result_integer = perform_arithmetic(a_integer, b_integer);
+        result = std::to_string(result_integer) + 'x' + '^' + a_exponent;
+    }
+    else if(binomial.non_exponentiated_monomials){ //3x + 2x
+        a_integer = std::stoi(a.substr(0, a.size() - 1));
+        b_integer = std::stoi(b.substr(0, b.size() - 1));
+        result_integer = perform_arithmetic(a_integer, b_integer);
+        result = std::to_string(result_integer) + 'x';
+    } else if(binomial.both_integers){ //3 + 2
+        a_integer = std::stoi(a);
+        b_integer = std::stoi(b);
+        result_integer = perform_arithmetic(a_integer, b_integer);
+        result = std::to_string(result_integer);
+    } else{
+        ;//Provided that we have gathered up our elements properly this block should activate a boolean that stops the processing
+    }
+    return result;
+}
+
+
+std::string algebra::arithmetic(std::string &a, std::string &b) {
+    std::string result;
+    check_arithmetic_equivalency(a, b);
+    result = add_sub(a, b);
+    return result;
+}
+
+algebra::algebra(bool &double_subtraction) {
+    binomial.double_subtraction = double_subtraction;
+}
+
 class simplifier{
 
 
@@ -749,7 +973,7 @@ public:
     void test2();
     void test3();
     void sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue);
-    void differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative);
+    void differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative, std::deque<std::string> &polynomial_derivatives);
     expression(std::string expression); //Copy constructor
     expression(expression&&) = default; //Move constructor
     expression& operator = (const expression&) & = default; //Move constructor
@@ -1101,6 +1325,8 @@ void expression::function_parser(){
     test3();
 }
 
+
+
 void expression::sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector){
     std::sort(std::begin(tuples_vector), std::end(tuples_vector), [](std::tuple<int, int> const &t1, std::tuple<int, int> const &t2) {
         return std::get<0>(t1) < std::get<0>(t2);
@@ -1118,7 +1344,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
     typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> SE_OD; //Starting and ending brackets' indices
     std::deque<SE_OD> orders_of_depth; //How deep the functions are
     std::deque<SE_OD> current_level; //Functions which are currently to be processed
-    std::deque<std::string> previous_derivatives;
+    std::deque<std::string> previous_derivatives; //We fill it with derivatives to functions
     std::string derivative_inside;
     std::string derivative_outside;
     std::string expression;
@@ -1130,8 +1356,9 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed layers
                 orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB]));
         }
-        sort_tuples_queue(orders_of_depth);  //They are always being stored in a left to right(increasing) order
+        sort_tuples_queue(orders_of_depth);  //They are always being stored in a left to right(increasing) order //TEST 1 are elements sorted?
         deepest_level = std::get<0>(std::get<1>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
+        //TEST 2 is it really the deepest level?
         orders_of_depth.pop_front();
         while(std::get<0>(std::get<1>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth
             //We fill up current level, it will contain all functions that can be found at the same degree of depth
@@ -1155,12 +1382,31 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
             //That means original values won't be replaced unless there is a valid simplification
             //In this example we would have a product rule which means that derivative outside would be used in the product rule formula
             previous_derivatives.push_back(derivative_outside);
+            //The purpose to previous derivative is so we store the derivative to our previous elements for a potential product, quotient rule to be performed at an upper level
         }
         //TODO: Write a module that handles simple derivatives (i.e sin(#1) or ln(#1)
-        //tan(3x+ sin(x + cos(x)*log(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the chain rule
-        //tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos
+        //Example 1: tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the chain rule
+        //Example 2: tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos
+        //because cos(x) can be operated since functions and arguments are same for both, giving us cos square
         //The derivative to cos^2(x) would then be calculated
+        //Note: The original argument to the function must be stored in a map where #1: argument, #2: argument
         //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
+
+        /////////////////////////////////1st example tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x))
+
+
+        //First iteration Note: the first iteration is always going to have a polynomial as argument, the next will always include a function
+        //outside derivative = -sin(1#)
+        //previous_derivatives.push_back(outside_derivative))
+
+        //Second iteration
+        //outside_derivative = 1/2#
+        //previous_derivatives.push_back(outside_derivative)) Note: Since it is a queue, we know elements will always be processed in order in the next upper level
+        //////////////UPPER LEVEL
+        //next we have as argument (x + cos(x)*ln(x)) and previous_derivatives(queue) = {1/2#, -sin(1#)} tokenised_arguments #1: x, #2: x
+        //when the simplify function is called we know there is a product rule and so we leave it there before it has to be differentiated
+
+        /////////////////////////////////2nd example tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x))
     }
     //Only at this point will the outside derivative variable be valid since there are no more derivatives to be processed
 }
@@ -1208,6 +1454,8 @@ void test_simplification(){
     simplified.simplify_expression();
 }
 
+void 
+
 void autocalculus(){
     char input[100];
     while(true){
@@ -1217,7 +1465,7 @@ void autocalculus(){
         expression function = expression(input);
         function.find_scopes();
         function.function_parser();
-        function.differentiate();
+        //function.differentiate();
         break;
     }
 }
