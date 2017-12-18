@@ -1369,19 +1369,26 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         }
         //We revert the current level
         for(SE_OD function : current_level){ //We are going from right to left in order to pick up the previous polynomials as we go
-            subvector_to_string(std::get<0>(function), expression); //We set up the expression to be differentiated
-            Argument argument = Argument(expression, previous_derivatives); //TODO: As they are being processed a pop front operation should be performed over previous derivatives
-            //Previous derivatives must be tokenised so that the expressions can be parsed without taking the trigonometric functions' arguments into account
-            //They'll be parsed in order by the # standard (i.e #1, #2, #3) they will be extracted from a map when needed
-            //The previous derivatives are going to replace our current functions, after the expression has been simplified
-            derivative_inside = argument.differentiate(); //The derivative inside is always definitive
-            //derivative_outside = simple derivative function returns in this case 1 * -sin hint: use get_function
-            //We would always have to get rid of the one in cases like this
-            //Derivative outside is a potential derivative we can use unless there is a simplification that changes our original functions
-            //That means original values won't be replaced unless there is a valid simplification
-            //In this example we would have a product rule which means that derivative outside would be used in the product rule formula
-            previous_derivatives.push_back(derivative_outside);
-            //The purpose to previous derivative is so we store the derivative to our previous elements for a potential product, quotient rule to be performed at an upper level
+            if(std::get<0>(function) == 0){ //When we have the outer most function 
+                Argument argument = Argument(expression, previous_derivatives);
+                derivative_inside = argument.differentiate();
+                //Derivative_outside
+                //return Derivative_inside * derivative inside
+            } else{
+                subvector_to_string(std::get<0>(function), expression); //We set up the expression to be differentiated
+                Argument argument = Argument(expression, previous_derivatives); //TODO: As they are being processed a pop front operation should be performed over previous derivatives
+                //Previous derivatives must be tokenised so that the expressions can be parsed without taking the trigonometric functions' arguments into account
+                //They'll be parsed in order by the # standard (i.e #1, #2, #3) they will be extracted from a map when needed
+                //The previous derivatives are going to replace our current functions, after the expression has been simplified
+                derivative_inside = argument.differentiate(); //The derivative inside is always definitive
+                //derivative_outside = simple derivative function returns in this case 1 * -sin hint: use get_function
+                //We would always have to get rid of the one in cases like this
+                //Derivative outside is a potential derivative we can use unless there is a simplification that changes our original functions
+                //That means original values won't be replaced unless there is a valid simplification
+                //In this example we would have a product rule which means that derivative outside would be used in the product rule formula
+                previous_derivatives.push_back(derivative_outside);
+                //The purpose to previous derivative is so we store the derivative to our previous elements for a potential product, quotient rule to be performed at an upper level
+            }
         }
         //TODO: Write a module that handles simple derivatives (i.e sin(#1) or ln(#1)
         //Example 1: tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the chain rule
@@ -1392,7 +1399,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
 
         /////////////////////////////////1st example tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x))
-        
+
         //First iteration Note: the first iteration is always going to have a polynomial as argument, the next will always include a function
         //outside derivative = -sin(1#)
         //previous_derivatives.push_back(outside_derivative))
@@ -1401,12 +1408,20 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         //outside_derivative = 1/2#
         //previous_derivatives.push_back(outside_derivative)) Note: Since it is a queue, we know elements will always be processed in order in the next upper level
 
-        //////////////UPPER LEVEL
+        ////////////////UPPER LEVEL
         ///////////next we have as argument (x + cos(x)*ln(x)) and previous_derivatives(queue) = {1/2#, -sin(1#)} tokenised_arguments #1: x, #2: x
-        //when the simplify function is called we know there is a product rule and so we leave it there before it has to be differentiated
+        //////////when the simplify function is called we know there is a product rule and so we leave it there before it has to be differentiated
+        /////////that's when previous derivatives will come into play
+
 
         /////////////////////////////////2nd example tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x))
-        ///////////We will have the same here but the simplify function must handle the cos(x)*cos(x) case
+
+
+        ///////////We will have the same here but the simplify function must handle the cos(x)*cos(x) case another map will be needed that maps tokenised arguments to functions #1: cos #2: ln
+        //////////Leaving us with previous_derivatives(queue) = {-sin(#2), -sin(#1)} tokenised arguments #1: x, #2: x and another map #1: cos #2: cos
+        //////////When elements are passed into the argument, they will sequentially be tokenised in the same way i.e x + cos(#1)*cos(#2)
+        /////////The function will handle the special cases where functions and arguments (through the # tokenisation map) are the same
+        ////////The map to original function will let us know what elements from previous derivatives must be deleted
     }
     //Only at this point will the outside derivative variable be valid since there are no more derivatives to be processed
 }
@@ -1424,7 +1439,7 @@ std::string expression::differentiate() {
     std::pair<SB_EB, derivative_found> differentiated_functionsp;
     std::map<SB_EB, derivative_found> differentiated_functions;
     std::string derivative;
-    if(!_function_to_inside_functionm.empty()){ //If there are any trigonometric function
+    if(!_function_to_inside_functionm.empty()){ //If there are any trigonometric functions
        differentiate_level_by_level(differentiated_functions, scope_to_expression_to_derivative);
     } else { //We just differentiate a polynomial
         ;
