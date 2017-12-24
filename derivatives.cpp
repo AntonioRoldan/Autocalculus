@@ -656,26 +656,15 @@ std::string simplifier::perform_simplification(){
     std::string simple_arithmetic_simplification;
     std::string quotient_products_simplification;
     if (polynomial.product_and_quotients_exist){
-        set_quotients_and_products(_expressionarr);
-        quotient_products_simplification = isPolynomial ?  perform_polynomial_simplification_helper(false) : perform_mixed_simplification_helper(false);
-        set_simple_arithmetic();
-        simple_arithmetic_simplification = isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
-        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+        //If there are any product or quotient rules, they will be deleted from the map and added to a secondary map for their processing later
+        ;//First we simplify products
+        //Secondly we simplify quotients Note: we need the algebra class to work properly for this
     } else if (polynomial.product_exists) {
-        set_quotients_and_products(_expressionarr);
-        quotient_products_simplification = perform_polynomial_simplification_helper(false);
-        set_simple_arithmetic();
-        simple_arithmetic_simplification= isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
-        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+        ;
     } else if (polynomial.quotient_exists){
-        set_quotients_and_products(_expressionarr);
-        quotient_products_simplification = perform_polynomial_simplification_helper(false);
-        set_simple_arithmetic();
-        simple_arithmetic_simplification = isPolynomial ? perform_polynomial_simplification_helper(true) : perform_mixed_simplification_helper(true);
-        simplification = simple_arithmetic_simplification + quotient_products_simplification;
+       ;
     } else{
-        set_simple_arithmetic();
-        simplification = perform_polynomial_simplification_helper(true);
+       ;
     }
     return simplification;
 }
@@ -941,8 +930,8 @@ private:
     std::pair<int, std::string> _index_to_functionp; //Stores each function as a key with its corresponding index in the expression
     std::map<int, std::string> _index_to_functionm;
     std::multimap<int, std::string> _index_to_functionmr; //Same for repeated values
-    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
-    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>>> _function_to_inside_functionm;
+    std::pair<std::tuple<int, int>, std::vector<std::tuple<int, int>> _function_to_inside_functionp; //Keys: function's range Values: ranges of the functions inside it
+    std::map<std::tuple<int, int>, std::vector<std::tuple<int, int>> _function_to_inside_functionm;
     std::pair<std::tuple<int, int>, std::tuple<int , int>> _SE_to_ODp;
     std::map<std::tuple<int, int>, std::tuple<int, int>> _SE_to_OD;
     std::vector<std::tuple<int, int>> _sorted_SB_EB;
@@ -1297,7 +1286,7 @@ void expression::fill_function_ranges() {
         }
     }
     else {
-        typedef std::multimap<std::string, std::vector<int>>::const_iterator iteratorr; //refer to https://stackoverflow.com/questions/29535125/access-key-from-values-and-value-from-key
+        typedef std::multimap<std::string, std::vector<int>>::const_iterator iteratorr;
         for (iteratorr it = _function_to_rangemr.begin(); it != _function_to_rangemr.end(); it++) {
             indices_buffer.push_back(it->second[1]);
         }
@@ -1324,15 +1313,13 @@ void expression::function_parser(){
     test3();
 }
 
-
-
-void expression::sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector){
+void expression::sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_vector){//////////////FIRST TEST
     std::sort(std::begin(tuples_vector), std::end(tuples_vector), [](std::tuple<int, int> const &t1, std::tuple<int, int> const &t2) {
         return std::get<0>(t1) < std::get<0>(t2);
     });
 }
 
-void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue){
+void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue){///////////////SECOND TEST
     std::sort(std::begin(tuples_queue), std::end(tuples_queue), [](std::tuple<std::tuple<int, int>, std::tuple<int, int>> const &t1) {
         return std::get<1>(std::get<0>(t1)) < std::get<1>(std::get<1>(t1));
     });
@@ -1340,43 +1327,51 @@ void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, s
 
 void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative, std::deque<std::string> &polynomial_derivatives){
     /* As if we were opening a russian doll from the inside, that's how this function is processing each function argument, from the inner (which always contains a polynomial) to the outer-most degrees of depth*/
+    typedef std::tuple<std::string, std::string> argument_to_derivative;
     typedef std::tuple<std::tuple<int, int>, std::tuple<int, int>> SE_OD; //Starting and ending brackets' indices
+    typedef std::string sharp_standard;
+    std::map<sharp_standard, argument_to_derivative> sharp_parsing; //
     std::deque<SE_OD> orders_of_depth; //How deep the functions are
     std::deque<SE_OD> current_level; //Functions which are currently to be processed
     std::deque<std::string> previous_derivatives; //We fill it with derivatives to functions
+    int sharp_index;
+    sharp_standard sharpStandard;
     std::string derivative_inside;
     std::string derivative_outside;
+    std::string previous_derivative;
     std::string expression;
     SE_OD cur;
     std::tuple<int, int> to_be_deleted; //This container will store
-    sort_tuples_vector(_sorted_SB_EB);
+    sort_tuples_vector(_sorted_SB_EB); ////////Test 1
     int deepest_level;
     while(!_sorted_SB_EB.empty()){ //While there is some function we haven't processed yet
+        sharp_index = 1;
         for(std::tuple<int, int> SB_EB : _sorted_SB_EB){ //First we find out what arguments are lying at the deepest not-yet-processed layers
                 orders_of_depth.push_back(std::make_tuple(SB_EB, _SE_to_OD[SB_EB]));
         }
         sort_tuples_queue(orders_of_depth);  //They are always being stored in a left to right(increasing) order //TEST 1 are elements sorted?
         deepest_level = std::get<0>(std::get<1>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
-        //TEST 2 is it really the deepest level?
+        ///////Test 2 is it really the deepest level? it will be if the queue is properly sorted
         orders_of_depth.pop_front();
-        while(std::get<0>(std::get<1>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth
+        while(std::get<0>(std::get<1>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth (we check the first elemement of the second tuple for that)
             //We fill up current level, it will contain all functions that can be found at the same degree of depth
-            cur = orders_of_depth.front();
+            cur = std::get<0>(orders_of_depth.front()); //We pick up the starting and ending brackets of a function at the current level
             current_level.push_back(cur); //We push them into the queue containing all functions found at the same level of depth
             orders_of_depth.pop_front();
             to_be_deleted = std::get<0>(cur); //Since we are going to process this function already before the loop reaches it, we can delete it
             _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
-        }
+        }////////////////////Test 3
         //We revert the current level
         for(SE_OD function : current_level){ //We are going from right to left in order to pick up the previous polynomials as we go
-            if(std::get<0>(function) == 0){ //When we have the outer most function 
+            if(std::get<0>(function) == 0){ //When we have the outer most function
                 Argument argument = Argument(expression, previous_derivatives);
                 derivative_inside = argument.differentiate();
                 //Derivative_outside
-                //return Derivative_inside * derivative inside
+                //return Derivative_inside * derivative outside
             } else{
                 subvector_to_string(std::get<0>(function), expression); //We set up the expression to be differentiated
-                Argument argument = Argument(expression, previous_derivatives); //TODO: As they are being processed a pop front operation should be performed over previous derivatives
+                /////////Test 4 it should make sure that the brackets won't be added to the expression to be differentiated
+                Argument argument = Argument(expression, previous_derivatives);
                 //Previous derivatives must be tokenised so that the expressions can be parsed without taking the trigonometric functions' arguments into account
                 //They'll be parsed in order by the # standard (i.e #1, #2, #3) they will be extracted from a map when needed
                 //The previous derivatives are going to replace our current functions, after the expression has been simplified
@@ -1386,18 +1381,30 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
                 //Derivative outside is a potential derivative we can use unless there is a simplification that changes our original functions
                 //That means original values won't be replaced unless there is a valid simplification
                 //In this example we would have a product rule which means that derivative outside would be used in the product rule formula
-                previous_derivatives.push_back(derivative_outside);
+                if(derivative_inside != 1){////////Test 5 it should get rid of the one in this case
+                    sharp_index += 1;
+                    sharpStandard = "#" + std::to_string(sharp_index);
+                    previous_derivative = derivative_inside + "*" + derivative_outside;
+                    previous_derivatives.push_back(previous_derivative);
+                } else{
+                    sharp_index += 1;
+                    sharpStandard = "#" + std::to_string(sharp_index);
+                    previous_derivatives.push_back(derivative_outside);//TODO:Instead of a queue it should be a map (sharp to argument(the expression variable in this case) and its derivative
+                }
                 //The purpose to previous derivative is so we store the derivative to our previous elements for a potential product, quotient rule to be performed at an upper level
             }
         }
+        sharpStandard.clear();
         //TODO: Write a module that handles simple derivatives (i.e sin(#1) or ln(#1)
-        //Example 1: tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the chain rule
-        //Example 2: tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos
+        //Example 1: tan(3x+ sin(x + cos(2x)*ln(2x)) - 2 * ln(x)) here outside derivative is indeed valid since the result of our simplification leaves the functions intact, it would be used in the product rule
+        //the program reads at the second level x + cos(#1)*ln(#2) using the map we extract the derivative and the expression to perform the product rule here
+
+        //Example 2: tan(3x + sin(x + cos(x)*cos(x)) - 2 * ln(x)) here outside derivative won't be valid since there is a simplification with cos also since derivative inside is one we don't add anything
         //because cos(x) can be operated since functions and arguments are same for both, giving us cos square
         //The derivative to cos^2(x) would then be calculated
-        //Note: The original argument to the function must be stored in a map where #1: argument, #2: argument
+        //Note: The original argument to the function must be stored in a map where #1: argument_to_derivative, #2: argument_to_derivative
         //Once we have it, we pick up the function that contains them and process the argument using the methods of the argument class
-
+        //TODO:Write on paper the algorithm steps
         /////////////////////////////////1st example tan(3x+ sin(x + cos(x)*ln(x)) - 2 * ln(x))
 
         //First iteration Note: the first iteration is always going to have a polynomial as argument, the next will always include a function
@@ -1449,7 +1456,7 @@ std::string expression::differentiate() {
 
 void expression::subvector_to_string(std::tuple<int, int> &indices, std::string &expression){
     //Assigns string elements from a vector in a given indices range to a string variable
-    for(int i = std::get<0>(indices); i <= std::get<1>(indices); i++){
+    for(int i = std::get<0>(indices); i <= std::get<1>(indices); i++){ //////////////////////////FOURTH TEST
         expression += _expressionarr[i];
     }
 }
