@@ -321,47 +321,24 @@ class algebra {
 private:
 
     std::vector<char> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
-    struct Binomial{
-        bool double_subtraction;
-        bool equivalent_exponentiation;
-        bool non_exponentiated_monomials;
-        bool both_integers;
-        bool addition_or_subtraction;
-        std::string expression_a;
-        std::string expression_b;
-    };
-    Binomial binomial;
 
 public:
-
-    std::string addMonomials(std::string &a, std::string &b);
-    int perform_arithmetic(int a_integer, int b_integer);
-    void check_arithmetic_equivalency(std::string &a, std::string &b);
-    std::string add_sub(std::string &a, std::string &b);
-    std::string arithmetic(std::string &a, std::string &b);
+    
     std::string mulMonomials(std::string &a, std::string &b);
-    std::string subMonomials(std::string &a, std::string &b);
+    std::string divMonomials(std::string &a, std::string &b);
     bool isNumber(char &number);
     bool hasExponent(const std::string & str);
-    void reset_binomial();
     algebra(bool &double_subtraction);
 };
-
-std::string algebra::subMonomials(std::string &a, std::string &b) {
-    std::string result;
-    binomial.addition_or_subtraction = false;
-    result = arithmetic(a, b);
-    if(std::stoi(result) < 0)
-        result = "-" + result;
-    else
-        result = "+" + result;
-    return result;
-}
 
 bool algebra::hasExponent(const std::string & str)
 {
     const char c = '^';
     return str.find(c) != std::string::npos;
+}
+
+std::string divMonomials(std::string &a, std::string &b){
+    ;
 }
 
 //addition or subtraction,
@@ -448,91 +425,6 @@ std::string algebra::mulMonomials(std::string &a, std::string &b) {
 bool algebra::isNumber(char &number) {
     auto pos = std::find(_numbers.begin(), _numbers.end(), number);
     return pos != _numbers.end();
-}
-
-std::string algebra::addMonomials(std::string &a, std::string &b){
-    std::string result;
-    binomial.addition_or_subtraction = true;
-    result = arithmetic(a, b);
-    if(binomial.double_subtraction)
-        result = "-" + result;
-    return result;
-}
-
-int algebra::perform_arithmetic(int a_integer, int b_integer){
-    int result_integer;
-    result_integer = binomial.addition_or_subtraction ? a_integer + b_integer : a_integer - b_integer;
-    return result_integer;
-}
-
-void algebra::reset_binomial(){
-    binomial.equivalent_exponentiation = false;
-    binomial.non_exponentiated_monomials = false;
-    binomial.both_integers = false;
-}
-
-void algebra::check_arithmetic_equivalency(std::string &a, std::string &b){
-    reset_binomial();
-    std::string a_exponent;
-    std::string b_exponent;
-    if(hasExponent(a) and hasExponent(b)) { //If they both have exponents
-        auto pos = a.find('^');
-        auto posb = b.find('^');
-        a_exponent.assign(a.begin() + pos + 1, a.begin() + a.size());
-        b_exponent.assign(b.begin() + posb + 1, b.begin() + b.size());
-        binomial.equivalent_exponentiation = a_exponent != b_exponent ? true : false;
-        return;
-    }
-        //if equivalent exponentiation is set to false the operation will stop
-    else if((hasExponent(a) and !hasExponent(b)) or (!hasExponent(a) and hasExponent(b))) {
-        binomial.equivalent_exponentiation = false;
-    }
-    else if(a.front() == 'x' and a.front() == b.front()){
-        binomial.non_exponentiated_monomials = true; //Non exponentiated but still with an x
-    }
-    else if(a.front() != 'x' and b.front() != 'x'){
-        binomial.both_integers = true;
-    }
-}
-
-std::string algebra::add_sub(std::string &a, std::string &b){
-    std::string a_exponent;
-    std::string b_exponent;
-    int a_integer;
-    int b_integer;
-    int result_integer;
-    std::string result;
-    if(binomial.equivalent_exponentiation){ //3x^2 + 2x^2
-        auto pos = a.find('^');
-        auto posb = b.find('^');
-        a_exponent.assign(a.begin() + pos + 1, a.begin() + a.size());
-        b_exponent.assign(b.begin() + posb + 1, b.begin() + b.size());
-        a_integer = std::stoi(a.substr(0, pos - 2)); //-2 to make sure we get rid of the x
-        b_integer = std::stoi(b.substr(0, posb - 2));
-        result_integer = perform_arithmetic(a_integer, b_integer);
-        result = std::to_string(result_integer) + 'x' + '^' + a_exponent;
-    }
-    else if(binomial.non_exponentiated_monomials){ //3x + 2x
-        a_integer = std::stoi(a.substr(0, a.size() - 1));
-        b_integer = std::stoi(b.substr(0, b.size() - 1));
-        result_integer = perform_arithmetic(a_integer, b_integer);
-        result = std::to_string(result_integer) + 'x';
-    } else if(binomial.both_integers){ //3 + 2
-        a_integer = std::stoi(a);
-        b_integer = std::stoi(b);
-        result_integer = perform_arithmetic(a_integer, b_integer);
-        result = std::to_string(result_integer);
-    } else{
-        ;//Provided that we have gathered up our elements properly this block should activate a boolean that stops the processing
-    }
-    return result;
-}
-
-std::string algebra::arithmetic(std::string &a, std::string &b) {
-    std::string result;
-    check_arithmetic_equivalency(a, b);
-    result = add_sub(a, b);
-    return result;
 }
 
 algebra::algebra(bool &double_subtraction) {
@@ -730,9 +622,9 @@ void simplifier::parse_argument() { //TODO Test the argument parsing
     Parser parser = Parser(_expression);
     _expressionarr = parser.detect_functions();
     tokens = parser.parse();
-    polynomial.parsed_argument = std::get<0>(tokens);
+    polynomial.parsed_argument = std::get<0>(tokens); ////////S TEST 1
     index_to_expression = std::get<1>(tokens);
-    polynomial.poly = std::get<2>(tokens);
+    polynomial.poly = std::get<2>(tokens); //////S TEST 2 ///print elements one by one 
     _index_to_functionm = std::get<3>(tokens);
 }
 
@@ -789,7 +681,6 @@ void Argument::parse_argument() {
     std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string>, std::map<int, std::string>> tokens;
     Parser parse = Parser(_argument);
     tokens = parse.parse();
-    //TODO:
 }
 
 //3x + 2x - [(4sin(3x) * 7x) * (5 * 8x^2) * (3x * 2sin(5x)) * (4x * 5x) * (4x * 5) * (7x * 9)
@@ -801,56 +692,21 @@ std::string Argument::perform_polynomial_differentiation_helper(){
     ;
 }
 
-std::string Argument::differentiation() {
-    std::string derivative;
-    if (product_exists() and quotient_exists()) {
-        argument.product_and_quotients_exist = true;
-    }
-    derivative = perform_differentiation();
-    return derivative;
-}
-
 std::string Argument::perform_differentiation(){
     std::string derivative;
-    std::string simple_arithmetic_derivative;
-    std::string quotient_products_derivative;
-    if (argument.product_and_quotients_exist){ //We start by simplifying the expressions
-    } else if (argument.product_exists) {
-    } else if (argument.quotient_exists){
-    } else{
-        ;
-    }
+    std::string simplification;
+    simplifier simplify = simplifier(_argument);
     return derivative;
-}
-
-bool Argument::product_exists(){
-    auto find_product = std::find(argument.argument.begin(), argument.argument.end(), "*");
-    if (find_product != argument.argument.end()) {
-        argument.product_exists = true;
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool Argument::quotient_exists(){
-    auto find_quotient = std::find(argument.argument.begin(), argument.argument.end(), "/");
-    if (find_quotient != argument.argument.end()) {
-        argument.quotient_exists = true;
-        return true;
-    } else {
-        return false;
-    }
 }
 
 std::string Argument::differentiate() {
     std::string derivative;
     parse_argument(); //It stores an index with its corresponding expression in a map
-    derivative = differentiation();
+    derivative = perform_differentiation();
     return derivative;
 }
 
-std::string Argument::differentiate_monomial(std::string &monomial) {
+std::string Argument::differentiate_monomial(std::string &monomial) {//////////THIS FUNCTION WILL BELONG TO THE DERIVATIVE CLASS 
     std::string exponent;
     std::string derivative;
     std::string coefficient;
