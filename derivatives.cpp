@@ -98,10 +98,10 @@ std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string
             catch_argument = _expressionarr[i] == "(";
         }
         else if(isFunction(_expressionarr[i])) {
-            function = _expressionarr[i] + "(" + ")";
+            function = _expressionarr[i] + "(" + ")"; ////////Instead we add the sharp to it
             std::cout<<"Function: "<<function<<std::endl;
         }
-        else if(!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and catch_argument){
+        else if(!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and catch_argument){///////We don't need to catch arguments since they will be stored in the # map
             std::string monomial_inside = _expressionarr[i];
             std::cout<<"Monomial inside: "<<monomial_inside<<std::endl;
             auto starting_brackets = function.find(")");
@@ -323,7 +323,7 @@ private:
     std::vector<char> _numbers = {'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'};
 
 public:
-    
+
     std::string mulMonomials(std::string &a, std::string &b);
     std::string divMonomials(std::string &a, std::string &b);
     bool isNumber(char &number);
@@ -624,7 +624,7 @@ void simplifier::parse_argument() { //TODO Test the argument parsing
     tokens = parser.parse();
     polynomial.parsed_argument = std::get<0>(tokens); ////////S TEST 1
     index_to_expression = std::get<1>(tokens);
-    polynomial.poly = std::get<2>(tokens); //////S TEST 2 ///print elements one by one 
+    polynomial.poly = std::get<2>(tokens); //////S TEST 2 ///print elements one by one
     _index_to_functionm = std::get<3>(tokens);
 }
 
@@ -706,7 +706,7 @@ std::string Argument::differentiate() {
     return derivative;
 }
 
-std::string Argument::differentiate_monomial(std::string &monomial) {//////////THIS FUNCTION WILL BELONG TO THE DERIVATIVE CLASS 
+std::string Argument::differentiate_monomial(std::string &monomial) {//////////THIS FUNCTION WILL BELONG TO THE DERIVATIVE CLASS
     std::string exponent;
     std::string derivative;
     std::string coefficient;
@@ -1188,7 +1188,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
     typedef std::string sharp_standard;
     std::map<sharp_standard, argument_to_derivative> sharp_parsing; //
     std::deque<SE_OD> orders_of_depth; //How deep the functions are
-    std::deque<SE_OD> current_level; //Functions which are currently to be processed
+    std::deque<std::tuple<int, int>> current_level; //Functions which are currently to be processed
     std::deque<std::string> previous_derivatives; //We fill it with derivatives to functions
     int sharp_index;
     sharp_standard sharpStandard;
@@ -1196,7 +1196,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
     std::string derivative_outside;
     std::string previous_derivative;
     std::string expression;
-    SE_OD cur;
+    std::tuple<int, int> cur;
     std::tuple<int, int> to_be_deleted; //This container will store
     sort_tuples_vector(_sorted_SB_EB); ////////Test 1
     int deepest_level;
@@ -1207,7 +1207,7 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
         }
         sort_tuples_queue(orders_of_depth);  //They are always being stored in a left to right(increasing) order //TEST 1 are elements sorted?
         deepest_level = std::get<0>(std::get<1>(orders_of_depth.front())); //The deepest level is always the last element in the queue, since we have sorted the queue in increasing order
-        ///////Test 2 is it really the deepest level? it will be if the queue is properly sorted
+        ///////Test 2 is it really the deepest level? it will be if the tuple queue is properly sorted
         orders_of_depth.pop_front();
         while(std::get<0>(std::get<1>(orders_of_depth.front())) == deepest_level){ //While the functions being extracted from the deque are at the same level of depth (we check the first elemement of the second tuple for that)
             //We fill up current level, it will contain all functions that can be found at the same degree of depth
@@ -1218,14 +1218,14 @@ void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, boo
             _sorted_SB_EB.erase(std::remove(_sorted_SB_EB.begin(), _sorted_SB_EB.end(), to_be_deleted), _sorted_SB_EB.end()); //We get rid of the already differentiated function
         }////////////////////Test 3
         //We revert the current level
-        for(SE_OD function : current_level){ //We are going from right to left in order to pick up the previous polynomials as we go
+        for(std::tuple<int, int> function : current_level){ //We are going from right to left in order to pick up the previous polynomials as we go
             if(std::get<0>(function) == 0){ //When we have the outer most function
                 Argument argument = Argument(expression, previous_derivatives);
                 derivative_inside = argument.differentiate();
                 //Derivative_outside
                 //return Derivative_inside * derivative outside
             } else{
-                subvector_to_string(std::get<0>(function), expression); //We set up the expression to be differentiated
+                subvector_to_string(function, expression); //We set up the expression to be differentiated
                 /////////Test 4 it should make sure that the brackets won't be added to the expression to be differentiated
                 Argument argument = Argument(expression, previous_derivatives);
                 //Previous derivatives must be tokenised so that the expressions can be parsed without taking the trigonometric functions' arguments into account
@@ -1305,7 +1305,7 @@ std::string expression::differentiate() {
     if(!_function_to_inside_functionm.empty()){ //If there are any trigonometric functions
        differentiate_level_by_level(differentiated_functions, scope_to_expression_to_derivative);
     } else { //We just differentiate a polynomial
-        ;
+        ; ///////Start from here, building small simpler blocks
     }
     return derivative;
 }
