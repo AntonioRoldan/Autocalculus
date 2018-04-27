@@ -360,9 +360,9 @@ void expression::sort_tuples_vector(std::vector<std::tuple<int, int>> &tuples_ve
 }
 
 void expression::sort_tuples_queue(std::deque<std::tuple<std::tuple<int, int>, std::tuple<int, int>>> &tuples_queue) {///////////////SECOND TEST
-	std::sort(std::begin(tuples_queue), std::end(tuples_queue), [](std::tuple<std::tuple<int, int>, std::tuple<int, int>> const &t1) {
+	/*std::sort(std::begin(tuples_queue), std::end(tuples_queue), [](std::tuple<std::tuple<int, int>, std::tuple<int, int>> const &t1) {
 		return std::get<1>(std::get<0>(t1)) < std::get<1>(std::get<1>(t1));
-	});
+	});*/ //TODO: FIX ME!!!!
 }
 
 void expression::differentiate_level_by_level(std::map<std::tuple<int, int>, bool> &differentiated_functions, std::map<std::tuple<int, int>, std::tuple<std::string, std::string>> &scope_to_expression_to_derivative, std::deque<std::string> &polynomial_derivatives) {
