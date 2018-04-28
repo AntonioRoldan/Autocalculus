@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"algorithm": "cpp",
+			"deque": "cpp",
+			"vector": "cpp",
+			"xstring": "cpp",
+			"tuple": "cpp",
+			"initializer_list": "cpp",
+			"stack": "cpp",
+			"type_traits": "cpp",
+			"xtree": "cpp",
+			"xutility": "cpp"
+		}
+	}
+}

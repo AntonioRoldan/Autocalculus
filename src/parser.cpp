@@ -1,5 +1,7 @@
 #include "../include/parser.h"
 #include <iostream>
+#include <algorithm>
+#include <cmath>
 
 Parser::Parser(std::string &expression) {
 	_expression = expression;
@@ -55,14 +57,14 @@ std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string
 	insert_index_to_function();
 	for (size_t i = 0; i < _expressionarr.size(); i++) {
 		//We prepare a map, mapping indices to expressions
-		if (_expressionarr[i] == "(" or _expressionarr[i] == ")") {
+		if (_expressionarr[i] == "(" || _expressionarr[i] == ")") {
 			catch_argument = _expressionarr[i] == "(";
 		}
 		else if (isFunction(_expressionarr[i])) {
 			function = _expressionarr[i] + "(" + ")"; ////////Instead we add the sharp to it
 			std::cout << "Function: " << function << std::endl;
 		}
-		else if (!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and catch_argument) {///////We don't need to catch arguments since they will be stored in the # map
+		else if (!isSymbol(_expressionarr[i][0]) && !isFunction(_expressionarr[i]) && catch_argument) {///////We don't need to catch arguments since they will be stored in the # map
 			std::string monomial_inside = _expressionarr[i];
 			std::cout << "Monomial inside: " << monomial_inside << std::endl;
 			auto starting_brackets = function.find(")");
@@ -70,7 +72,7 @@ std::tuple<std::vector<int>, std::map<int, std::string>, std::vector<std::string
 			insert_index_to_expression(index, function);
 			index += 1;
 		}
-		else if (!isSymbol(_expressionarr[i][0]) and !isFunction(_expressionarr[i]) and !catch_argument) {
+		else if (!isSymbol(_expressionarr[i][0]) && !isFunction(_expressionarr[i]) && !catch_argument) {
 			monomial = _expressionarr[i];
 			std::cout << "Monomial: " << monomial << std::endl;
 			insert_index_to_expression(index, monomial);
@@ -225,7 +227,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 				break;
 			default:
 				if (isspace(_expression[i]));
-				else if (isNumber(_expression[i]) and !previous_number) {
+				else if (isNumber(_expression[i]) && !previous_number) {
 					if (!catch_exponent) {
 						number += _expression[i];
 					}
@@ -234,16 +236,15 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 					}
 					previous_number = true;
 				}
-				else if (isNumber(_expression[i]) and previous_number) {
+				else if (isNumber(_expression[i]) && previous_number) {
 					if (!catch_exponent)
 						number += _expression[i];
 					else
 						exponent += _expression[i];
 				}
-				else if (!isNumber(_expression[i]) and previous_number) {
+				else if (!isNumber(_expression[i]) && previous_number) {
 					if (_expression[i] == '^') {
-						if (_expression[i - 1] == 'x' or
-							_expression[i - 1] == 'y') {//If it is a polynomial raised to some power
+						if (_expression[i - 1] == 'x' || _expression[i - 1] == 'y') {//If it is a polynomial raised to some power
 							number += _expression[i]; //Number will be added its exponent symbol
 							catch_exponent = true;
 							polynomial_raised = true;
@@ -253,13 +254,13 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 							integer_raised = true;
 						}
 					}
-					else if (catch_exponent and integer_raised) {
+					else if (catch_exponent && integer_raised) {
 						number = std::to_string(std::pow(std::stoi(number), std::stoi(exponent)));
 						_expressionarr.push_back(number);
 						exponent.clear();
 						integer_raised = false;
 					}
-					else if (catch_exponent and polynomial_raised) {
+					else if (catch_exponent && polynomial_raised) {
 						number += exponent; //Number will be added its exponent so it will later be processed by differentiate_monomial
 						_expressionarr.push_back(number);
 						exponent.clear();
@@ -272,7 +273,7 @@ std::vector<std::string> Parser::detect_functions() { //Refactoring needed
 					}
 				}
 				if (isSymbol(_expression[i])) { //TODO: Get the program to process exponents to expressions between brackets as functions
-					if (_expression[i] == '^' and _expression[i - 1] == ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
+					if (_expression[i] == '^' && _expression[i - 1] == ')') //If we have an exponent to an expression between brackets, we can interpret it as a function
 						; //with its respective derivative
 					else
 						_expressionarr.push_back(std::string(1, _expression[i])); //We convert char into a string of length one

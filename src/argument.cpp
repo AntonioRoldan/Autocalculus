@@ -54,7 +54,7 @@ std::string Argument::differentiate_monomial(std::string &monomial) {//////////T
 	}
 	if (exponent.front() == '^') //Handles the case where we have Nx^N
 		if (monomial != "x") {
-			if (exponent.front() == '2' and exponent.size() == 2) { //Nx^2
+			if (exponent.front() == '2' && exponent.size() == 2) { //Nx^2
 				derivative = std::to_string(std::stoi(exponent.substr(1, exponent.size())) * std::stoi(
 					monomial.substr(0, monomial.size() - 1))); //We subtract one to get rid of x
 				derivative += 'x';
@@ -66,7 +66,7 @@ std::string Argument::differentiate_monomial(std::string &monomial) {//////////T
 			}
 		}
 		else { //Else we have x^N or x^2
-			if (exponent.front() == '2' and exponent.size() == 2) {
+			if (exponent.front() == '2' && exponent.size() == 2) {
 				derivative = "2x";
 			}
 			else {

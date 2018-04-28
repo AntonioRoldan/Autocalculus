@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "g++ -g -std=c++11 -o derivatives src/expression.cpp src/parser.cpp src/argument.cpp src/simplifier.cpp src/algebra.cpp src/main.cpp",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
