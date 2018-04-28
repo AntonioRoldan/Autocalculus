@@ -8,12 +8,12 @@
 
 bool expression::isNumber(char &number) {
 	auto pos = std::find(_numbers.begin(), _numbers.end(), number);
-	return pos != _numbers.end();
+	return pos != _numbers.end(); //TODO: Is this needed? Parser has an identical function
 }
 
 bool expression::isSymbol(char &symbol) {
 	auto pos = std::find(_symbols.begin(), _symbols.end(), symbol);
-	return pos != _symbols.end();
+	return pos != _symbols.end(); //TODO: Is this needed? Parser has an identical function
 }
 
 void expression::insert_index_to_function() {
@@ -37,7 +37,7 @@ bool expression::initialise_classification(char symbol, size_t &index) {
 	auto is_stored = std::find(_symbols_stored.begin(), _symbols_stored.end(), symbol);
 	if (is_stored != _symbols_stored.end())
 		return false;
-	else if (symbols.empty() or is_stored == _symbols_stored.end()) {
+	else if (symbols.empty() || is_stored == _symbols_stored.end()) {
 		_symbols_stored.push_back(symbol);
 		symbols.push_back(index);
 		_symbols_classificationp.first = symbol; //Symbol
@@ -227,7 +227,7 @@ void expression::fill_function_to_inside(std::tuple<int, int> &pivot) {
 	for (auto &i : _function_ranges) {
 		S2 = std::get<0>(i);
 		E2 = std::get<1>(i);
-		if (S1 < S2 and E1 > E2) {
+		if (S1 < S2 && E1 > E2) {
 			inside = true;
 			functions_inside.push_back(std::make_tuple(S2, E2));
 		}

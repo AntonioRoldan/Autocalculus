@@ -82,7 +82,7 @@ std::string simplifier::get_exponent(std::string &monomial) {
 	else if (monomial.back() == 'x') {
 		exponent = "x";
 	}
-	else if (monomial.back() == '+' or monomial.back() == '-' or monomial.back() == '*' or monomial.back() == '/') {
+	else if (monomial.back() == '+' || monomial.back() == '-' || monomial.back() == '*' || monomial.back() == '/') {
 		exponent = "null";
 	}
 	else {
@@ -149,7 +149,7 @@ std::string simplifier::perform_mixed_simplification_helper(bool simple_arithmet
 
 std::string simplifier::simplification() {
 	std::string simplification;
-	if (quotient_exists() and product_exists())
+	if (quotient_exists() && product_exists())
 		polynomial.quotient_and_product_exist = true;
 	simplification = perform_simplification();
 	return simplification;
